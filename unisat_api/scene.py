@@ -35,31 +35,29 @@ class Scene:
     def products(self) -> dict:
         return self._data["products"]
     
-    def get_fragments(self):
-        if self._fragments is None:
-            params = {
-                "request": "GetSeanceProducts",
-                "dt": self.dt,
-                "satellite": self.satellite,
-                "device": self.device,
-                "station": self.station,
-                "products": ','.join(self.products.keys()),
-                "bbox": ','.join(str(x) for x in self._params["bbox"])
-            }
-            
-            query_string = urlencode(params)
-            url = f"{self._base_url}?{query_string}"
-            
-            response = requests.get(url, timeout=self._timeout)
-            response.raise_for_status()
-            self._fragments = response.json()
+    def _load_fragments(self):
+        """Загружает фрагменты с сервера"""
+        params = {
+            "request": "GetSeanceProducts",
+            "dt": self.dt,
+            "satellite": self.satellite,
+            "device": self.device,
+            "station": self.station,
+            "products": ','.join(self.products.keys()),
+            "bbox": ','.join(str(x) for x in self._params["bbox"])
+        }
         
-        return self._fragments
+        query_string = urlencode(params)
+        url = f"{self._base_url}?{query_string}"
+        
+        response = requests.get(url, timeout=self._timeout)
+        response.raise_for_status()
+        self._fragments = response.json()
     
-    def get_products_info(self):
+    def get_fragments(self):
         """Возвращает список фрагментов с путями к tif файлам"""
         if self._fragments is None:
-            self.get_fragments()
+            self._load_fragments()
         
         result = []
         for frag in self._fragments:
@@ -72,13 +70,13 @@ class Scene:
 
     def get_vsicurl(self, fragment_index: int, product_type: str) -> str:
         """Возвращает vsicurl для конкретного продукта"""
-        fragments = self.get_products_info()
+        fragments = self.get_fragments()
         product_file = fragments[fragment_index][product_type]
         return f"/vsicurl/{config.NGINX_BASE_URL}/{product_file}"
 
     def get_http_url(self, fragment_index: int, product_type: str) -> str:
         """Возвращает http url для конкретного продукта"""
-        fragments = self.get_products_info()
+        fragments = self.get_fragments()
         product_file = fragments[fragment_index][product_type]
         return f"{config.NGINX_BASE_URL}/{product_file}"
 
@@ -116,7 +114,7 @@ class Scene:
             flat: если True, все файлы в одну папку с именами YYYYMMDD_hhmmss_<frag_num>_<product>.tif
                 если False, сохраняет оригинальную структуру product/04040/...
         """
-        fragments = self.get_products_info()
+        fragments = self.get_fragments()
         if not fragments:
             print("Нет фрагментов для скачивания")
             return None

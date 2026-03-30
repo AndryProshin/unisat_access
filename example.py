@@ -9,7 +9,14 @@ params = Parameters("sentinel2_boa", {
 })
 
 metadata = Metadata(params)
-print(f"Найдено сцен: {len(metadata)}")
+print(f"Найдено сцен: {len(metadata)}\n")
 
-for scene in metadata:
-    print(scene.dt, scene.satellite)
+scene = metadata[0]
+print(f"Сцена: {scene.dt} | {scene.satellite} | {scene.device}")
+
+fragments = scene.get_fragments()
+http_frag = scene.to_http(fragments[0])
+
+print("\nHTTP ссылки на файлы первого фрагмента:")
+for product, url in http_frag.items():
+    print(f"  {product}: {url}")

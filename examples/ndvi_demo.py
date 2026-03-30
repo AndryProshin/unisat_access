@@ -127,7 +127,7 @@ for scene_idx, scene in enumerate(metadata):
     print('=' * 60)
     
     # Получение фрагментов
-    fragments = scene.get_products_info()
+    fragments = scene.get_fragments()
     print(f"Фрагментов: {len(fragments)}")
     
     # Массивы для хранения фрагментов

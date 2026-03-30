@@ -17,7 +17,7 @@ params = Parameters("sentinel2_boa_ndvi", {})
 metadata = Metadata(params)
 scene = metadata[3]
 
-fragments = scene.get_products_info()
+fragments = scene.get_fragments()
 http_frag = scene.to_http(fragments[0])
 
 red_url = http_frag.get("channel4_l2a")

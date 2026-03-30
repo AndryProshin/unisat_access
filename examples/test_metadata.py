@@ -33,7 +33,7 @@ print(f"station: {scene.station}")
 print(f"products: {list(scene.products.keys())}\n")
 
 # 4. Получаем фрагменты с путями
-fragments = scene.get_products_info()
+fragments = scene.get_fragments()
 print(f"=== Фрагменты ({len(fragments)}) ===")
 for i, frag in enumerate(fragments):
     print(f"Фрагмент {i}: {frag}")

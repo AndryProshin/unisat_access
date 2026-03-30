@@ -81,7 +81,7 @@ Scene
 Работа со сценой: фрагменты, файлы, ссылки.
 
 python
-fragments = scene.get_products_info()
+fragments = scene.get_fragments()
 http_frag = scene.to_http(fragments[0])
 vsicurl_frag = scene.to_vsicurl(fragments[0])
 Примеры
