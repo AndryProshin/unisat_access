@@ -3,31 +3,29 @@
 Библиотека для доступа к данным спутниковых архивов.
 
 ## Структура проекта
-unisat_access/
-├── unisat_api/ # Основная библиотека
-│ ├── init.py
-│ ├── config.py # Настройки (переменные окружения)
-│ ├── parameters.py # Класс Parameters
-│ ├── metadata.py # Класс Metadata
-│ ├── scene.py # Класс Scene
-│ ├── exceptions.py # Исключения
-│ └── utils/
-│ └── validators.py # Валидаторы
-├── examples/ # Примеры использования
-│ ├── test_parameters.py # Демо работы с Parameters
-│ ├── test_metadata.py # Демо работы с Metadata
-│ ├── ndvi_demo.py # Расчёт NDVI для сцены
-│ ├── benchmark_read_methods.py # Сравнение методов чтения
-│ └── check_gdal.py # Проверка GDAL
-├── presets/ # JSON-файлы пресетов
-├── tests/ # Юнит-тесты
-│ └── test_parameters.py
-├── data/ # Выходные данные (создаётся при запуске)
-├── .env.example
-├── requirements.txt
-└── README.md
+* unisat_access/  
+	* unisat_api/ # Основная библиотека  
+        * __init__.py  
+        * config.py # Настройки (переменные окружения)
+        * parameters.py # Класс Parameters
+        * metadata.py # Класс Metadata
+        * scene.py # Класс Scene
+        * exceptions.py # Исключения
+        * utils/
+            * validators.py # Валидаторы
+    * examples/ # Примеры использования
+        * test_parameters.py # Демо работы с Parameters
+        * test_metadata.py # Демо работы с Metadata
+        * ndvi_demo.py # Расчёт NDVI для сцены
+        * benchmark_read_methods.py # Сравнение методов чтения
+        * check_gdal.py # Проверка GDAL
+    * presets/ # JSON-файлы пресетов
+    * tests/ # Юнит-тесты
+  		* test_parameters.py
+    * data/ # Выходные данные (создаётся при запуске)
+    * requirements.txt
+    * README.md
 
-text
 
 ## Установка
 
