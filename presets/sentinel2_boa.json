@@ -1,0 +1,11 @@
+{
+    "satellites": ["SENTINEL-2A", "SENTINEL-2B", "SENTINEL-2C"],
+    "devices": ["MSI_BOA"],
+    "stations": ["ESA"],
+    "products": ["channel8_l2a", "channel4_l2a"],
+    "limit": 10,
+    "bbox": null,
+    "dt_from": null,
+    "dt": null
+
+}

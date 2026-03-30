@@ -1,0 +1,7 @@
+﻿__pycache__/
+*.pyc
+data/
+download/
+download_flat/
+.env
+test_temp/

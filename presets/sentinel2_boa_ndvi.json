@@ -1,0 +1,11 @@
+{
+    "satellites": ["SENTINEL-2A", "SENTINEL-2B", "SENTINEL-2C"],
+    "devices": ["MSI_BOA"],
+    "stations": ["ESA"],
+    "dt_from": "2024-08-01 00:00:00",
+    "dt": "2024-08-10 00:00:00",
+    "products": ["channel8_l2a", "channel4_l2a"],
+    "bbox": [44.5, 44.5, 45, 45],
+    "limit": 10,
+    "max_cloudiness": 80
+}
