@@ -11,17 +11,18 @@
         * metadata.py # Класс Metadata
         * scene.py # Класс Scene
         * exceptions.py # Исключения
+        * .env.example
         * utils/
             * validators.py # Валидаторы
     * examples/ # Примеры использования
-        * test_parameters.py # Демо работы с Parameters
-        * test_metadata.py # Демо работы с Metadata
-        * ndvi_demo.py # Расчёт NDVI для сцены
-        * benchmark_read_methods.py # Сравнение методов чтения
-        * check_gdal.py # Проверка GDAL
+        * test_parameters.py # Демо работы с классом Parameters
+        * test_metadata.py # Демо работы с классами Metadata и Scene
+        * ndvi_demo.py # Расчёт и склейка NDVI по сценам, полученным в результате запроса
+        * benchmark_read_methods.py # Сравнение методов чтения geotif файлов
+        * check_gdal.py # Проверка поддрежки GDAL
     * presets/ # JSON-файлы пресетов
     * tests/ # Юнит-тесты
-  		* test_parameters.py
+  		* test_parameters.py 
     * data/ # Выходные данные (создаётся при запуске)
     * requirements.txt
     * README.md
@@ -42,13 +43,15 @@ bash
 Создайте файл .env в корне проекта:
 
 env
-METADATA_URL=http://192.168.80.137:8085
-NGINX_URL=http://192.168.80.137:8095
+METADATA_URL=http://10.10.10.10:8085
+NGINX_URL=http://10.10.10.10:8095
 PRESETS_DIR=./presets
 METADATA_TIMEOUT=10
-Основные классы
-Parameters
-Управление параметрами запроса. Загрузка/сохранение пресетов, валидация.
+```
+
+## Основные классы
+# Parameters
+```Управление параметрами запроса. Загрузка/сохранение пресетов, валидация.
 
 python
 from unisat_api import Parameters
@@ -64,8 +67,10 @@ params.to_dict()                    # Словарь для запроса
 params.save("my_preset")            # Сохранить новый пресет
 params.get_required_params()        # Список обязательных параметров
 params.get_parameters_description() # Описание всех параметров
-Metadata
-Получение метаданных. Итерация по сценам.
+```
+
+# Metadata
+```Получение метаданных. Итерация по сценам.
 
 python
 from unisat_api import Metadata
@@ -77,33 +82,20 @@ for scene in metadata:
     print(scene.dt, scene.satellite)
 
 scene = metadata[0]
-Scene
-Работа со сценой: фрагменты, файлы, ссылки.
+```
+
+# Scene
+```Работа со сценой: фрагменты, файлы, ссылки.
 
 python
 fragments = scene.get_fragments()
 http_frag = scene.to_http(fragments[0])
 vsicurl_frag = scene.to_vsicurl(fragments[0])
-Примеры
-test_parameters.py
-bash
-python examples/test_parameters.py
-test_metadata.py
-bash
-python examples/test_metadata.py
-ndvi_demo.py
-bash
-python examples/ndvi_demo.py
-benchmark_read_methods.py
-bash
-python examples/benchmark_read_methods.py
-check_gdal.py
-bash
-python examples/check_gdal.py
-Зависимости
+```
+
+# Зависимости
 requirements.txt:
 
-text
 requests>=2.28.0
 numpy>=1.24.0
 python-dotenv>=1.0.0
