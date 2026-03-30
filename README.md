@@ -22,7 +22,8 @@
         * check_gdal.py # Проверка поддрежки GDAL
     * presets/ # JSON-файлы пресетов
     * tests/ # Юнит-тесты
-  		* test_parameters.py 
+  		* test_parameters.py
+    * example.py # Простейший пример для ознакомления
     * data/ # Выходные данные (создаётся при запуске)
     * requirements.txt
     * README.md
