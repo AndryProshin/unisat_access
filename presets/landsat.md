@@ -5,6 +5,7 @@
 Пресет предназначен для работы с данными спутников Landsat (уровень обработки L1) — значения яркости на верхней границе атмосферы (TOA — Top Of Atmosphere).
 
 ### Спутники
+
 - LANDSAT-4
 - LANDSAT-5
 - LANDSAT-7
@@ -12,6 +13,7 @@
 - LANDSAT-9
 
 ### Приборы
+
 - TM (Thematic Mapper) — Landsat 4–5
 - ETM_PLUS (Enhanced Thematic Mapper Plus) — Landsat 7
 - OLI (Operational Land Imager) — Landsat 8–9
@@ -19,6 +21,7 @@
 - OLI_TIRS — комбинированные данные
 
 ### Станция приёма
+
 USGS (Геологическая служба США)
 
 ---
