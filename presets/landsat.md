@@ -14,11 +14,9 @@
 ### Приборы
 - TM (Thematic Mapper) — Landsat 4–5
 - ETM_PLUS (Enhanced Thematic Mapper Plus) — Landsat 7
-- ETM_PLUS_SR — Landsat 7 (поверхностное отражение)
 - OLI (Operational Land Imager) — Landsat 8–9
 - TIRS (Thermal Infrared Sensor) — Landsat 8–9
 - OLI_TIRS — комбинированные данные
-- OLI_SR — Landsat 8–9 (поверхностное отражение)
 
 ### Станция приёма
 USGS (Геологическая служба США)

@@ -2,7 +2,7 @@
     "satellites": ["LANDSAT-4", "LANDSAT-5", "LANDSAT-7", "LANDSAT-8", "LANDSAT-9"],
     "devices": ["TM_BOA", "ETM_PLUS_BOA", "OLI_TIRS_BOA"],
     "stations": ["USGS"],
-    "products": ["lc2_sr_b4", "lc2_sr_b5"],
+    "products": null,
     "limit": 10,
     "bbox": null,
     "dt_from": null,

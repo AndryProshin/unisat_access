@@ -10,10 +10,6 @@
   "stations": [
     "ESA"
   ],
-  "products": [
-    "channel8_l2a",
-    "channel4_l2a"
-  ],
   "limit": 10,
   "dt_from": "2024-01-01 00:00:00",
   "dt": "2024-01-02 00:00:00",
@@ -22,6 +18,10 @@
     41,
     45,
     45
+  ],
+  "products": [
+    "channel8_l2a",
+    "channel4_l2a"
   ],
   "max_cloudiness": 80,
   "_valid": {

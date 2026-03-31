@@ -1,8 +1,8 @@
 {
     "satellites": ["LANDSAT-4", "LANDSAT-5", "LANDSAT-7", "LANDSAT-8", "LANDSAT-9"],
-    "devices": ["TM", "ETM_PLUS", "ETM_PLUS_SR", "OLI", "OLI_TIRS", "TIRS", "OLI_SR"],
+    "devices": ["TM", "ETM_PLUS", "OLI", "OLI_TIRS", "TIRS"],
     "stations": ["USGS"],
-    "products": ["lc2_b4", "lc2_b5"],
+    "products": null,
     "limit": 10,
     "bbox": null,
     "dt_from": null,

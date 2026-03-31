@@ -55,7 +55,7 @@ class Scene:
         self._fragments = response.json()
     
     def get_fragments(self):
-        """Возвращает список фрагментов с путями к tif файлам"""
+        """Возвращает список фрагментов с путями к файлам"""
         if self._fragments is None:
             self._load_fragments()
         
@@ -111,8 +111,8 @@ class Scene:
         
         Args:
             base_dir: базовая директория для сохранения
-            flat: если True, все файлы в одну папку с именами YYYYMMDD_hhmmss_<frag_num>_<product>.tif
-                если False, сохраняет оригинальную структуру product/04040/...
+            flat: если True, все файлы в одну папку с именами YYYYMMDD_hhmmss_<frag_num>_<product>.<ext>
+                  если False, сохраняет оригинальную структуру product/04040/...
         """
         fragments = self.get_fragments()
         if not fragments:
@@ -137,8 +137,11 @@ class Scene:
                         continue
                     
                     if flat:
-                        # Имя файла: YYYYMMDD_hhmmss_fragN_product.tif
-                        filename = f"{dt_str}_frag{i}_{product_type}.tif"
+                        # Извлекаем оригинальное расширение из пути
+                        ext = Path(original_path).suffix
+                        if not ext:
+                            ext = ".tif"
+                        filename = f"{dt_str}_frag{i}_{product_type}{ext}"
                         local_path = base_path / filename
                     else:
                         # Оригинальная структура

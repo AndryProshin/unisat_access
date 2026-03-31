@@ -2,7 +2,7 @@
     "satellites": ["SENTINEL-2A", "SENTINEL-2B", "SENTINEL-2C"],
     "devices": ["MSI"],
     "stations": ["ESA"],
-    "products": ["channel8", "channel4"],
+    "products": null,
     "limit": 10,
     "bbox": null,
     "dt_from": null,
@@ -22,9 +22,6 @@
             "channel10",
             "channel11",
             "channel12",
-            "meta",
-            "metafrag",
-            "qi_data_tar_frag",
             "s2_cs",
             "s2_cs_cdf",
             "dw_mode"

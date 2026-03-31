@@ -13,6 +13,7 @@ params = Parameters("sentinel2_boa", {
     "dt_from": "2024-01-01 00:00:00",
     "dt": "2024-01-10 00:00:00",
     "bbox": [43, 43, 45, 45],
+    "products": ["channel8_l2a", "channel4_l2a"],
     "limit": 2,
     "max_cloudiness": 50
 })
@@ -34,6 +35,7 @@ print(f"products: {list(scene.products.keys())}\n")
 
 # 4. Получаем фрагменты с путями
 fragments = scene.get_fragments()
+
 print(f"=== Фрагменты ({len(fragments)}) ===")
 for i, frag in enumerate(fragments):
     print(f"Фрагмент {i}: {frag}")
