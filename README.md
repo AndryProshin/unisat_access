@@ -49,8 +49,11 @@ pip install -r requirements.txt
 
 ### Windows (QGIS Python)
 
-```bash
-"C:\Program Files\QGIS 3.44.8\apps\Python3xx\python.exe" -m pip install -r requirements.txt
+Используйте Python из QGIS, если нужна встроенная поддержка GDAL (для примеров с GeoTIFF):
+
+```#
+cmd
+"C:\Program Files\QGIS 3.xx.y\apps\Python3xx\python.exe" -m pip install -r requirements.txt
 ```
 
 **Примечание:** GDAL не требуется для работы библиотеки. Он нужен только для запуска примеров `ndvi_demo.py` и `benchmark_read_methods.py`.
@@ -61,20 +64,24 @@ pip install -r requirements.txt
 
 ## Настройка
 
-Создайте файл .env в корне проекта:
+Создайте файл .env в корне проекта (указаны демонстрационные адреса):
 
 ```env
 METADATA_URL=<http://10.10.10.10:8085>
 NGINX_URL=<http://10.10.10.10:8095>
 ```
 
+## Импорт библиотек
+
+```#
+from unisat_api import Parameters, Metadata
+```
+
 ## Основные классы
 
 ### Parameters
 
-```from unisat_api import Parameters
-from pprint import pprint
-
+```#
 # Список доступных коллекций
 print(Parameters.list_presets())
 
@@ -89,7 +96,7 @@ params = Parameters(collection="sentinel2_boa", params={
 })
 
 # Получение словаря для запроса
-pprint(params.to_dict())
+print(params.to_dict())
 
 # Изменение параметра
 params.set("limit", 10)
@@ -104,20 +111,19 @@ params.save("my_query")
 
 # Загрузка пользовательского пресета
 params2 = Parameters(user_preset="my_query")
-pprint(params2.to_dict())
+print(params2.to_dict())
 
 # Переопределение параметров пользовательского пресета
 params3 = Parameters(user_preset="my_query", params={
     "max_cloudiness": 60,
     "limit": 20
 })
-pprint(params3.to_dict())
+print(params3.to_dict())
 ```
 
 ### Metadata
 
-```from unisat_api import Metadata
-
+```$
 # Создание параметров
 params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-01-01 00:00:00",
@@ -144,7 +150,8 @@ print(f"Доступные продукты: {list(scene.products.keys())}")
 
 ### Scene
 
-```Работа со сценой: фрагменты, файлы, ссылки.
+```#
+# Работа со сценой: фрагменты, файлы, ссылки.
 
 # Получение фрагментов с путями к файлам
 fragments = scene.get_fragments()
@@ -166,18 +173,6 @@ scene.download("download")
 # В плоскую структуру (все файлы в одной папке)
 scene.download("download_flat", flat=True)
 ```
-
-### Зависимости
-
-requirements.txt:
-
-```requests>=2.28.0
-numpy>=1.24.0
-python-dotenv>=1.0.0
-```
-
-**GDAL** не требуется для работы библиотеки.  
-Он нужен только для запуска примеров `ndvi_demo.py` и `benchmark_read_methods.py` (работа с GeoTIFF).
 
 Лицензия
 MIT
