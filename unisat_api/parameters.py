@@ -10,12 +10,14 @@ from . import config
 from .exceptions import ParameterError
 from .utils.validators import is_bbox, is_date_or_datetime
 
+
 class Parameters:
     """
     Класс для работы с параметрами запросов.
     """
     
     _schema: Optional[Dict[str, Any]] = None
+    _preset_valid: Optional[Dict[str, Any]] = None  # Хранит _valid из пресета
     
     def __init__(self, preset: Optional[str] = None, params: Optional[Dict[str, Any]] = None):
         self._params: Dict[str, Any] = {}
@@ -59,6 +61,11 @@ class Parameters:
         
         with open(preset_path, 'r', encoding='utf-8') as f:
             preset_data = json.load(f)
+            
+            # Сохраняем _valid отдельно, если есть
+            if "_valid" in preset_data:
+                self._preset_valid = preset_data.pop("_valid")
+            
             self._params = {k: v for k, v in preset_data.items() if v is not None}
 
     def _validate(self) -> None:
@@ -81,7 +88,6 @@ class Parameters:
             if param_name not in valid:
                 errors.append(
                     f"Parameter '{param_name}' is not allowed. "
-#                    f"Allowed parameters: {', '.join(sorted(valid.keys()))}"
                 )
                 continue
             
@@ -119,21 +125,44 @@ class Parameters:
                     f"Parameter '{param_name}' ({param_desc}) must be a date or datetime, "
                     f"got {param_value}"
                 )
+            
+            # Проверка допустимых значений из пресета (_valid)
+            if self._preset_valid and param_name in self._preset_valid:
+                allowed = self._preset_valid[param_name]
+                if isinstance(allowed, list):
+                    # Для LIST параметров проверяем каждый элемент
+                    if isinstance(param_value, list):
+                        for item in param_value:
+                            if item not in allowed:
+                                errors.append(
+                                    f"Parameter '{param_name}' value '{item}' is not allowed. "
+                                    f"Allowed: {allowed}"
+                                )
+                    else:
+                        # Для не-LIST параметров проверяем значение целиком
+                        if param_value not in allowed:
+                            errors.append(
+                                f"Parameter '{param_name}' value '{param_value}' is not allowed. "
+                                f"Allowed: {allowed}"
+                            )
         
         if errors:
             print(f"Parameter error:\n{chr(10).join(errors)}")
             print(self.get_parameters_description())
             sys.exit(1)
-
-#            raise ParameterError("\n".join(errors))
     
     def save(self, name: str) -> None:
         """Save current parameters as a new preset"""
         filepath = config.PRESETS_DIR / f"{name}.json"
         filepath.parent.mkdir(parents=True, exist_ok=True)
         
+        # Если есть _valid, сохраняем его
+        data_to_save = self._params.copy()
+        if self._preset_valid:
+            data_to_save["_valid"] = self._preset_valid
+        
         with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(self._params, f, indent=2, ensure_ascii=False, default=str)
+            json.dump(data_to_save, f, indent=2, ensure_ascii=False, default=str)
     
     def to_dict(self) -> Dict[str, Any]:
         return self._params.copy()

@@ -18,6 +18,8 @@ params = Parameters("sentinel2_boa", {
     "dt": "2024-01-02 00:00:00",
     "bbox": [41, 41, 45, 45],
     "limit": 100,
+    "products": ["channel8_l2a", "channel4_l2a"],
+
     "max_cloudiness": 80
 })
 # Get dictionary for archive request
