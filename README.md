@@ -123,7 +123,8 @@ for scene in metadata:
 # Доступ по индексу
 scene = metadata[0]
 print(f"Сцена: {scene.dt} | {scene.satellite} | {scene.device}")
-print(f"Доступные продукты: {list(scene.products.keys())}")```
+print(f"Доступные продукты: {list(scene.products.keys())}")
+```
 
 ### Scene
 
