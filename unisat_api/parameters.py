@@ -17,15 +17,29 @@ class Parameters:
     """
     
     _schema: Optional[Dict[str, Any]] = None
-    _preset_valid: Optional[Dict[str, Any]] = None  # Хранит _valid из пресета
+    _preset_valid: Optional[Dict[str, Any]] = None
     
-    def __init__(self, preset: Optional[str] = None, params: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        collection: Optional[str] = None,
+        user_preset: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Args:
+            collection: имя коллекции (из presets/collections/)
+            user_preset: имя пользовательского пресета (из presets/users/)
+            params: словарь параметров (переопределяют значения из пресета)
+        """
         self._params: Dict[str, Any] = {}
         
         self._load_schema()
         
-        if preset:
-            self._load_preset(preset)
+        # Загружаем пресет (приоритет: collection > user_preset)
+        if collection:
+            self._load_preset(collection, is_collection=True)
+        elif user_preset:
+            self._load_preset(user_preset, is_collection=False)
         
         if params:
             self._params.update(params)
@@ -53,8 +67,12 @@ class Parameters:
         except Exception as e:
             raise ParameterError(f"Error loading schema: {e}")
     
-    def _load_preset(self, preset_name: str) -> None:
-        preset_path = config.PRESETS_DIR / f"{preset_name}.json"
+    def _load_preset(self, preset_name: str, is_collection: bool) -> None:
+        """Загружает пресет из соответствующей директории"""
+        if is_collection:
+            preset_path = config.COLLECTIONS_DIR / f"{preset_name}.json"
+        else:
+            preset_path = config.USERS_DIR / f"{preset_name}.json"
         
         if not preset_path.exists():
             raise FileNotFoundError(f"Preset not found: {preset_path}")
@@ -130,7 +148,6 @@ class Parameters:
             if self._preset_valid and param_name in self._preset_valid:
                 allowed = self._preset_valid[param_name]
                 if isinstance(allowed, list):
-                    # Для LIST параметров проверяем каждый элемент
                     if isinstance(param_value, list):
                         for item in param_value:
                             if item not in allowed:
@@ -139,7 +156,6 @@ class Parameters:
                                     f"Allowed: {allowed}"
                                 )
                     else:
-                        # Для не-LIST параметров проверяем значение целиком
                         if param_value not in allowed:
                             errors.append(
                                 f"Parameter '{param_name}' value '{param_value}' is not allowed. "
@@ -152,8 +168,8 @@ class Parameters:
             sys.exit(1)
     
     def save(self, name: str) -> None:
-        """Save current parameters as a new preset"""
-        filepath = config.PRESETS_DIR / f"{name}.json"
+        """Save current parameters as a new user preset"""
+        filepath = config.USERS_DIR / f"{name}.json"
         filepath.parent.mkdir(parents=True, exist_ok=True)
         
         # Если есть _valid, сохраняем его
@@ -263,8 +279,13 @@ class Parameters:
     
     @classmethod
     def list_presets(cls) -> List[str]:
-        """Возвращает список доступных имён пресетов"""
-        presets_dir = config.PRESETS_DIR
-        if not presets_dir.exists():
-            return []
-        return [f.stem for f in presets_dir.glob("*.json")]
+        """Возвращает список доступных имён пресетов (из обеих директорий)"""
+        presets = []
+        
+        if config.COLLECTIONS_DIR.exists():
+            presets.extend([f.stem for f in config.COLLECTIONS_DIR.glob("*.json")])
+        
+        if config.USERS_DIR.exists():
+            presets.extend([f.stem for f in config.USERS_DIR.glob("*.json")])
+        
+        return sorted(presets)

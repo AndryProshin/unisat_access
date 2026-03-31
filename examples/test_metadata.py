@@ -9,7 +9,7 @@ from unisat_api.metadata import Metadata
 from pprint import pprint
 
 # 1. Создаём параметры запроса
-params = Parameters("sentinel2_boa", {
+params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-01-01 00:00:00",
     "dt": "2024-01-10 00:00:00",
     "bbox": [43, 43, 45, 45],

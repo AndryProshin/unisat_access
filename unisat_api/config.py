@@ -23,3 +23,7 @@ if not NGINX_BASE_URL:
 # Переменные с fallback на дефолты
 PRESETS_DIR = Path(os.getenv("PRESETS_DIR", DEFAULT_PRESETS_DIR))
 METADATA_TIMEOUT = int(os.getenv("METADATA_TIMEOUT", DEFAULT_METADATA_TIMEOUT))
+
+# Директории для пресетов
+COLLECTIONS_DIR = PRESETS_DIR / "collections"
+USERS_DIR = PRESETS_DIR / "users"

@@ -5,3 +5,6 @@ download/
 download_flat/
 .env
 test_temp/
+
+presets/users/
+presets/users/*
