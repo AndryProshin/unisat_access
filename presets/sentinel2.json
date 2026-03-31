@@ -8,6 +8,26 @@
     "dt_from": null,
     "dt": null,
     "_valid": {
-        "products": ["channel1", "channel2", "channel3", "channel4", "channel5", "channel6", "channel7", "channel8", "channel8A", "channel9", "channel10", "channel11", "channel12"]
+        "products": [
+            "channel1",
+            "channel2",
+            "channel3",
+            "channel4",
+            "channel5",
+            "channel6",
+            "channel7",
+            "channel8",
+            "channel8A",
+            "channel9",
+            "channel10",
+            "channel11",
+            "channel12",
+            "meta",
+            "metafrag",
+            "qi_data_tar_frag",
+            "s2_cs",
+            "s2_cs_cdf",
+            "dw_mode"
+        ]
     }
 }

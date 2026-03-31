@@ -8,7 +8,18 @@
     "dt_from": null,
     "dt": null,
     "_valid": {
-        "products": ["channel2_l2a", "channel3_l2a", "channel4_l2a", "channel5_l2a", "channel8_l2a", "channel8A_l2a", "channel11_l2a", "channel12_l2a"]
+        "products": [
+            "channel2_l2a",
+            "channel3_l2a",
+            "channel4_l2a",
+            "channel5_l2a",
+            "channel8_l2a",
+            "channel8A_l2a",
+            "channel11_l2a",
+            "channel12_l2a",
+            "s2_scl",
+            "metafrag_l2a",
+            "meta_l2a"
+        ]
     }
-
 }
