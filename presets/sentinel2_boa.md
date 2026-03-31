@@ -12,7 +12,7 @@
 
 ### Прибор
 
-MSI_BOA — MultiSpectral Instrument (атмосферная коррекция)
+MSI — MultiSpectral Instrument (атмосферная коррекция)
 
 ### Станция приёма
 
