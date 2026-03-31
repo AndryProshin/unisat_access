@@ -12,7 +12,6 @@
     * metadata.py # Класс Metadata
     * scene.py # Класс Scene
     * exceptions.py # Исключения
-    * .env.example
     * utils/
       * validators.py # Валидаторы
   * examples/ # Примеры использования
@@ -30,6 +29,7 @@
   * data/ # Выходные данные (создаётся при запуске)
   * requirements.txt
   * README.md
+  * .env.example
 
 ## Установка
 
