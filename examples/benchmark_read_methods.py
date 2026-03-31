@@ -1,8 +1,12 @@
 # benchmark_read_methods.py
 # Сравнение скорости чтения GeoTIFF разными методами
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from parameters import Parameters
-from metadata import Metadata
+from unisat_api.parameters import Parameters
+from unisat_api.metadata import Metadata
+
 import numpy as np
 from osgeo import gdal
 import requests
@@ -13,7 +17,13 @@ from pathlib import Path
 gdal.UseExceptions()
 
 # Настройка
-params = Parameters("sentinel2_boa_ndvi", {})
+params = Parameters(collection="sentinel2_boa", params={
+    "dt_from": "2024-08-01 00:00:00",
+    "dt": "2024-08-10 00:00:00",
+    "products": ["channel8_l2a", "channel4_l2a"],
+    "bbox": [44.5, 44.5, 45, 45],
+    "limit": 10,
+})
 metadata = Metadata(params)
 scene = metadata[3]
 

@@ -17,6 +17,7 @@ scene = metadata[0]
 print(f"Сцена: {scene.dt} | {scene.satellite} | {scene.device}")
 
 fragments = scene.get_fragments()
+
 http_frag = scene.to_http(fragments[0])
 
 print("\nHTTP ссылки на файлы первого фрагмента:")
