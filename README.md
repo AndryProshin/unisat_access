@@ -3,31 +3,31 @@
 Библиотека для организации пользовательского доступа к данным спутниковых архивов, реализованных по технологии UNISAT.
 
 ## Структура проекта
-* unisat_access/  
-	* unisat_api/ # Основная библиотека  
-        * __init__.py  
-        * config.py # Настройки (переменные окружения)
-        * parameters.py # Класс Parameters
-        * metadata.py # Класс Metadata
-        * scene.py # Класс Scene
-        * exceptions.py # Исключения
-        * .env.example
-        * utils/
-            * validators.py # Валидаторы
-    * examples/ # Примеры использования
-        * test_parameters.py # Демо работы с классом Parameters
-        * test_metadata.py # Демо работы с классами Metadata и Scene
-        * ndvi_demo.py # Расчёт и склейка NDVI по сценам, полученным в результате запроса
-        * benchmark_read_methods.py # Сравнение методов чтения geotif файлов
-        * check_gdal.py # Проверка поддрежки GDAL
-    * presets/ # JSON-файлы пресетов
-    * tests/ # Юнит-тесты
-  		* test_parameters.py
-    * example.py # Простейший пример для ознакомления
-    * data/ # Выходные данные (создаётся при запуске)
-    * requirements.txt
-    * README.md
 
+* unisat_access/  
+  * unisat_api/ # Основная библиотека  
+  * __init__.py  
+  * config.py # Настройки (переменные окружения)
+  * parameters.py # Класс Parameters
+  * metadata.py # Класс Metadata
+  * scene.py # Класс Scene
+  * exceptions.py # Исключения
+  * .env.example
+  * utils/
+    * validators.py # Валидаторы
+  * examples/ # Примеры использования
+    * test_parameters.py # Демо работы с классом Parameters
+    * test_metadata.py # Демо работы с классами Metadata и Scene
+    * ndvi_demo.py # Расчёт и склейка NDVI по сценам, полученным в результате запроса
+    * benchmark_read_methods.py # Сравнение методов чтения geotif файлов
+    * check_gdal.py # Проверка поддрежки GDAL
+  * presets/ # JSON-файлы пресетов
+  * tests/ # Юнит-тесты
+    * test_parameters.py
+  * example.py # Простейший пример для ознакомления
+  * data/ # Выходные данные (создаётся при запуске)
+  * requirements.txt
+  * README.md
 
 ## Установка
 
@@ -51,7 +51,9 @@ METADATA_TIMEOUT=10
 ```
 
 ## Основные классы
+
 # Parameters
+
 ```Управление параметрами запроса. Загрузка/сохранение пресетов, валидация.
 
 python
@@ -71,6 +73,7 @@ params.get_parameters_description() # Описание всех параметр
 ```
 
 # Metadata
+
 ```Получение метаданных. Итерация по сценам.
 
 python
@@ -86,6 +89,7 @@ scene = metadata[0]
 ```
 
 # Scene
+
 ```Работа со сценой: фрагменты, файлы, ссылки.
 
 python
@@ -95,6 +99,7 @@ vsicurl_frag = scene.to_vsicurl(fragments[0])
 ```
 
 # Зависимости
+
 requirements.txt:
 
 requests>=2.28.0
