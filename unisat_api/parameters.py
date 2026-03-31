@@ -28,7 +28,7 @@ class Parameters:
         """
         Args:
             collection: имя коллекции (из presets/collections/)
-            user_preset: имя пользовательского пресета (из presets/users/)
+            user_preset: имя пользовательского пресета (из presets/user_presets/)
             params: словарь параметров (переопределяют значения из пресета)
         """
         self._params: Dict[str, Any] = {}
@@ -72,7 +72,7 @@ class Parameters:
         if is_collection:
             preset_path = config.COLLECTIONS_DIR / f"{preset_name}.json"
         else:
-            preset_path = config.USERS_DIR / f"{preset_name}.json"
+            preset_path = config.USER_PRESETS_DIR / f"{preset_name}.json"
         
         if not preset_path.exists():
             raise FileNotFoundError(f"Preset not found: {preset_path}")
@@ -169,7 +169,7 @@ class Parameters:
     
     def save(self, name: str) -> None:
         """Save current parameters as a new user preset"""
-        filepath = config.USERS_DIR / f"{name}.json"
+        filepath = config.USER_PRESETS_DIR / f"{name}.json"
         filepath.parent.mkdir(parents=True, exist_ok=True)
         
         # Если есть _valid, сохраняем его
@@ -288,7 +288,7 @@ class Parameters:
         if config.COLLECTIONS_DIR.exists():
             result["collections"] = sorted([f.stem for f in config.COLLECTIONS_DIR.glob("*.json")])
         
-        if config.USERS_DIR.exists():
-            result["user_presets"] = sorted([f.stem for f in config.USERS_DIR.glob("*.json")])
+        if config.USER_PRESETS_DIR.exists():
+            result["user_presets"] = sorted([f.stem for f in config.USER_PRESETS_DIR.glob("*.json")])
         
         return result

@@ -26,4 +26,4 @@ METADATA_TIMEOUT = int(os.getenv("METADATA_TIMEOUT", DEFAULT_METADATA_TIMEOUT))
 
 # Директории для пресетов
 COLLECTIONS_DIR = PRESETS_DIR / "collections"
-USERS_DIR = PRESETS_DIR / "users"
+USER_PRESETS_DIR = PRESETS_DIR / "user_presets"

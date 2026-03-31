@@ -6,15 +6,15 @@
 
 * unisat_access/  
   * unisat_api/ # Основная библиотека  
-  * __init__.py  
-  * config.py # Настройки (переменные окружения)
-  * parameters.py # Класс Parameters
-  * metadata.py # Класс Metadata
-  * scene.py # Класс Scene
-  * exceptions.py # Исключения
-  * .env.example
-  * utils/
-    * validators.py # Валидаторы
+    * \_\_init\_\_.py  
+    * config.py # Настройки (переменные окружения)
+    * parameters.py # Класс Parameters
+    * metadata.py # Класс Metadata
+    * scene.py # Класс Scene
+    * exceptions.py # Исключения
+    * .env.example
+    * utils/
+      * validators.py # Валидаторы
   * examples/ # Примеры использования
     * test_parameters.py # Демо работы с классом Parameters
     * test_metadata.py # Демо работы с классами Metadata и Scene
@@ -22,7 +22,7 @@
     * benchmark_read_methods.py # Сравнение методов чтения geotif файлов
     * check_gdal.py # Проверка поддрежки GDAL
   * presets/ # JSON-файлы пресетов
-    * collection/ # Параметры, определяющие коллекции данных
+    * collections/ # Параметры, определяющие коллекции данных
     * users/ # Наборы определенных пользователем параметров
   * tests/ # Юнит-тесты
     * test_parameters.py
