@@ -1,0 +1,9 @@
+{
+    "satellites": ["SENTINEL-2A", "SENTINEL-2B"],
+    "products": ["channel8_l2a", "channel4_l2a"],
+    "max_cloudiness": 60,
+    "limit": 20,
+    "bbox": [41, 41, 45, 45],
+    "dt_from": "2024-06-01 00:00:00",
+    "dt": "2024-07-01 00:00:00"
+}

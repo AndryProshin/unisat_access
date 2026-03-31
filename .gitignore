@@ -6,5 +6,7 @@ download_flat/
 .env
 test_temp/
 
-presets/users/
+# Игнорировать все файлы в presets/users/
 presets/users/*
+# Но не игнорировать example.json
+!presets/users/example.json
