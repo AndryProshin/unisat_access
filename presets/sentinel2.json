@@ -1,0 +1,13 @@
+{
+    "satellites": ["SENTINEL-2A", "SENTINEL-2B", "SENTINEL-2C"],
+    "devices": ["MSI"],
+    "stations": ["ESA"],
+    "products": ["channel8", "channel4"],
+    "limit": 10,
+    "bbox": null,
+    "dt_from": null,
+    "dt": null,
+    "_valid": {
+        "products": ["channel1", "channel2", "channel3", "channel4", "channel5", "channel6", "channel7", "channel8", "channel8A", "channel9", "channel10", "channel11", "channel12"]
+    }
+}
