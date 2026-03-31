@@ -1,0 +1,17 @@
+{
+    "satellites": ["LANDSAT-4", "LANDSAT-5", "LANDSAT-7", "LANDSAT-8", "LANDSAT-9"],
+    "devices": ["OLI_TIRS_BOA"],
+    "stations": ["USGS"],
+    "products": ["lc2_sr_b4", "lc2_sr_b5"],
+    "limit": 10,
+    "bbox": null,
+    "dt_from": null,
+    "dt": null,
+    "_valid": {
+        "products": [
+            "lc2_sr_ang", "lc2_sr_mtl", "lc2_sr_b1", "lc2_sr_b2", "lc2_sr_b3", "lc2_sr_b4", "lc2_sr_b5", "lc2_sr_b7",
+            "lc2_st_atran", "lc2_st_cdist", "lc2_st_drad", "lc2_st_emis", "lc2_st_emsd", "lc2_st_qa", "lc2_st_trad", "lc2_st_urad",
+            "lc2_qa_px", "lc2_qa_radsat", "lc2_sr_b6", "lc2_st_b10", "lc2_sr_qa_aerosol", "lc2_sr_stac", "lc2_st_stac"
+        ]
+    }
+}
