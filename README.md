@@ -74,6 +74,8 @@ NGINX_URL=<http://10.10.10.10:8095>
 ## Импорт библиотек
 
 ```#
+import sys
+sys.path.insert(0, "путь/к/unisat_access")
 from unisat_api import Parameters, Metadata
 ```
 
