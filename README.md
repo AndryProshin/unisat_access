@@ -52,7 +52,7 @@ METADATA_TIMEOUT=10
 
 ## Основные классы
 
-# Parameters
+### Parameters
 
 ```Управление параметрами запроса. Загрузка/сохранение пресетов, валидация.
 
@@ -72,7 +72,7 @@ params.get_required_params()        # Список обязательных па
 params.get_parameters_description() # Описание всех параметров
 ```
 
-# Metadata
+### Metadata
 
 ```Получение метаданных. Итерация по сценам.
 
@@ -88,7 +88,7 @@ for scene in metadata:
 scene = metadata[0]
 ```
 
-# Scene
+### Scene
 
 ```Работа со сценой: фрагменты, файлы, ссылки.
 
@@ -98,7 +98,7 @@ http_frag = scene.to_http(fragments[0])
 vsicurl_frag = scene.to_vsicurl(fragments[0])
 ```
 
-# Зависимости
+### Зависимости
 
 requirements.txt:
 

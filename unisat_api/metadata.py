@@ -3,7 +3,7 @@
 import requests
 
 from . import config
-from .exceptions import ParameterError
+from .exceptions import ParameterError, MetadataError
 from .parameters import Parameters
 from .scene import Scene
 
