@@ -106,7 +106,7 @@ def save_geotiff(arr, path, transform, proj):
 # ============================================
 
 # 1. Настройка параметров запроса
-params = Parameters(collection="sentinel2_boa_ndvi", params={
+params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-08-01 00:00:00",
     "dt": "2024-08-10 00:00:00",
     "products": ["channel8_l2a", "channel4_l2a"],
