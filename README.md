@@ -56,48 +56,98 @@ METADATA_TIMEOUT=10
 
 ### Parameters
 
-```Управление параметрами запроса. Загрузка/сохранение пресетов, валидация.
+```from unisat_api import Parameters
+from pprint import pprint
 
-python
-from unisat_api import Parameters
+# Список доступных коллекций
+print(Parameters.list_presets())
 
-params = Parameters("sentinel2_boa", {
+# Создание параметров из коллекции с переопределением
+params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-01-01 00:00:00",
     "dt": "2024-01-02 00:00:00",
     "bbox": [41, 41, 45, 45],
-    "limit": 10
+    "limit": 100,
+    "products": ["channel8_l2a", "channel4_l2a"],
+    "max_cloudiness": 80
 })
 
-params.to_dict()                    # Словарь для запроса
-params.save("my_preset")            # Сохранить новый пресет
-params.get_required_params()        # Список обязательных параметров
-params.get_parameters_description() # Описание всех параметров
+# Получение словаря для запроса
+pprint(params.to_dict())
+
+# Изменение параметра
+params.set("limit", 10)
+print(params.get("limit"))
+
+# Информация о параметрах
+print(params.get_required_params())
+print(params.get_parameters_description())
+
+# Сохранение пользовательского пресета
+params.save("my_query")
+
+# Загрузка пользовательского пресета
+params2 = Parameters(user_preset="my_query")
+pprint(params2.to_dict())
+
+# Переопределение параметров пользовательского пресета
+params3 = Parameters(user_preset="my_query", params={
+    "max_cloudiness": 60,
+    "limit": 20
+})
+pprint(params3.to_dict())
 ```
 
 ### Metadata
 
-```Получение метаданных. Итерация по сценам.
+```from unisat_api import Metadata
 
-python
-from unisat_api import Metadata
+# Создание параметров
+params = Parameters(collection="sentinel2_boa", params={
+    "dt_from": "2024-01-01 00:00:00",
+    "dt": "2024-01-10 00:00:00",
+    "bbox": [43, 43, 45, 45],
+    "products": ["channel8_l2a", "channel4_l2a"],
+    "limit": 2,
+    "max_cloudiness": 50
+})
 
+# Загрузка метаданных
 metadata = Metadata(params)
 print(f"Найдено сцен: {len(metadata)}")
 
+# Итерация по сценам
 for scene in metadata:
     print(scene.dt, scene.satellite)
 
+# Доступ по индексу
 scene = metadata[0]
-```
+print(f"Сцена: {scene.dt} | {scene.satellite} | {scene.device}")
+print(f"Доступные продукты: {list(scene.products.keys())}")```
 
 ### Scene
 
 ```Работа со сценой: фрагменты, файлы, ссылки.
 
-python
+# Получение фрагментов с путями к файлам
 fragments = scene.get_fragments()
+print(f"Фрагментов: {len(fragments)}")
+for i, frag in enumerate(fragments):
+    print(f"Фрагмент {i}: {frag}")
+
+# Преобразование в HTTP ссылки
 http_frag = scene.to_http(fragments[0])
+for product, url in http_frag.items():
+    print(f"{product}: {url}")
+
+# Преобразование в vsicurl для GDAL
 vsicurl_frag = scene.to_vsicurl(fragments[0])
+
+# Скачивание файлов
+# С оригинальной структурой
+scene.download("download")
+# В плоскую структуру (все файлы в одной папке)
+scene.download("download_flat", flat=True)
 ```
 
 ### Зависимости
