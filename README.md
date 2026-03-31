@@ -22,6 +22,8 @@
     * benchmark_read_methods.py # Сравнение методов чтения geotif файлов
     * check_gdal.py # Проверка поддрежки GDAL
   * presets/ # JSON-файлы пресетов
+    * collection/ # Параметры, определяющие коллекции данных
+    * users/ # Наборы определенных пользователем параметров
   * tests/ # Юнит-тесты
     * test_parameters.py
   * example.py # Простейший пример для ознакомления
