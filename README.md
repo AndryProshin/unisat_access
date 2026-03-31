@@ -33,23 +33,39 @@
 
 ## Установка
 
-### Linux/Unix
+### Требования
+
+```requirements.txt:
+requests>=2.28.0
+numpy>=1.24.0
+python-dotenv>=1.0.0
+```
+
+### Linux/Unix, Windows
 
 ```bash
-sudo apt update
-sudo apt install -y gdal-bin libgdal-dev python3-gdal
 pip install -r requirements.txt
-Windows (QGIS Python)
-bash
-"C:\Program Files\QGIS 3.44.8\apps\Python312\python.exe" -m pip install -r requirements.txt
-Настройка
+```
+
+### Windows (QGIS Python)
+
+```bash
+"C:\Program Files\QGIS 3.44.8\apps\Python3xx\python.exe" -m pip install -r requirements.txt
+```
+
+**Примечание:** GDAL не требуется для работы библиотеки. Он нужен только для запуска примеров `ndvi_demo.py` и `benchmark_read_methods.py`.
+Установка GDAL при необходимости:
+
+* Linux: `sudo apt install gdal-bin libgdal-dev python3-gdal`
+* Windows: через QGIS или OSGeo4W
+
+## Настройка
+
 Создайте файл .env в корне проекта:
 
-env
-METADATA_URL=http://10.10.10.10:8085
-NGINX_URL=http://10.10.10.10:8095
-PRESETS_DIR=./presets
-METADATA_TIMEOUT=10
+```env
+METADATA_URL=<http://10.10.10.10:8085>
+NGINX_URL=<http://10.10.10.10:8095>
 ```
 
 ## Основные классы
@@ -155,14 +171,13 @@ scene.download("download_flat", flat=True)
 
 requirements.txt:
 
-requests>=2.28.0
+```requests>=2.28.0
 numpy>=1.24.0
 python-dotenv>=1.0.0
-GDAL устанавливается отдешно:
+```
 
-Linux: sudo apt install gdal-bin libgdal-dev python3-gdal
-
-Windows: через QGIS или OSGeo4W
+**GDAL** не требуется для работы библиотеки.  
+Он нужен только для запуска примеров `ndvi_demo.py` и `benchmark_read_methods.py` (работа с GeoTIFF).
 
 Лицензия
 MIT
