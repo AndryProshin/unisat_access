@@ -5,6 +5,7 @@
 Пресет предназначен для работы с данными спутников Landsat (уровень обработки L2) — атмосферно скорректированные значения отражательной способности на уровне поверхности (Surface Reflectance) и температура (Surface Temperature).
 
 ### Спутники
+
 - LANDSAT-4
 - LANDSAT-5
 - LANDSAT-7
@@ -12,11 +13,13 @@
 - LANDSAT-9
 
 ### Приборы
+
 - TM (Thematic Mapper) — для Landsat 4–5
 - ETM+ (Enhanced Thematic Mapper Plus) — для Landsat 7
 - OLI/TIRS (Operational Land Imager / Thermal Infrared Sensor) — для Landsat 8–9
 
 ### Станция приёма
+
 USGS (Геологическая служба США)
 
 ---
