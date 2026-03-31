@@ -11,8 +11,10 @@
 - LANDSAT-8
 - LANDSAT-9
 
-### Прибор
-OLI_TIRS_BOA — атмосферно скорректированные данные с OLI (оптический) и TIRS (тепловой)
+### Приборы
+- TM (Thematic Mapper) — для Landsat 4–5
+- ETM+ (Enhanced Thematic Mapper Plus) — для Landsat 7
+- OLI/TIRS (Operational Land Imager / Thermal Infrared Sensor) — для Landsat 8–9
 
 ### Станция приёма
 USGS (Геологическая служба США)

@@ -1,6 +1,6 @@
 {
     "satellites": ["LANDSAT-4", "LANDSAT-5", "LANDSAT-7", "LANDSAT-8", "LANDSAT-9"],
-    "devices": ["OLI_TIRS_BOA"],
+    "devices": ["TM_BOA", "ETM_PLUS_BOA", "OLI_TIRS_BOA"],
     "stations": ["USGS"],
     "products": ["lc2_sr_b4", "lc2_sr_b5"],
     "limit": 10,

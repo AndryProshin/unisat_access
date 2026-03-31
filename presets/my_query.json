@@ -33,7 +33,10 @@
       "channel8_l2a",
       "channel8A_l2a",
       "channel11_l2a",
-      "channel12_l2a"
+      "channel12_l2a",
+      "s2_scl",
+      "metafrag_l2a",
+      "meta_l2a"
     ]
   }
 }
