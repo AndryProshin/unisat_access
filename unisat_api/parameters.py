@@ -278,14 +278,17 @@ class Parameters:
         return "\n".join(lines)
     
     @classmethod
-    def list_presets(cls) -> List[str]:
-        """Возвращает список доступных имён пресетов (из обеих директорий)"""
-        presets = []
+    def list_presets(cls) -> Dict[str, List[str]]:
+        """Возвращает словарь с разделением по типам пресетов"""
+        result = {
+            "collections": [],
+            "user_presets": []
+        }
         
         if config.COLLECTIONS_DIR.exists():
-            presets.extend([f.stem for f in config.COLLECTIONS_DIR.glob("*.json")])
+            result["collections"] = sorted([f.stem for f in config.COLLECTIONS_DIR.glob("*.json")])
         
         if config.USERS_DIR.exists():
-            presets.extend([f.stem for f in config.USERS_DIR.glob("*.json")])
+            result["user_presets"] = sorted([f.stem for f in config.USERS_DIR.glob("*.json")])
         
-        return sorted(presets)
+        return result
