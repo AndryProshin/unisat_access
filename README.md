@@ -44,7 +44,7 @@ python-dotenv>=1.0.0
 Установка GDAL при необходимости:
 
 * Linux: `sudo apt install gdal-bin libgdal-dev python3-gdal`
-* Windows: через QGIS или OSGeo4W
+* Windows: OSGeo4W
 
 Также вы можете использовать Python из QGIS, если нужна встроенная поддержка GDAL
 
