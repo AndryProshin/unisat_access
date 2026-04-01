@@ -18,7 +18,7 @@
 - ETM+ (Enhanced Thematic Mapper Plus) — для Landsat 7
 - OLI/TIRS (Operational Land Imager / Thermal Infrared Sensor) — для Landsat 8–9
 
-### Станция приёма
+### Источник данных
 
 USGS (Геологическая служба США)
 
