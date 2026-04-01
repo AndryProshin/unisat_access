@@ -37,7 +37,6 @@
 
 ```requirements.txt:
 requests>=2.28.0
-numpy>=1.24.0
 python-dotenv>=1.0.0
 ```
 
