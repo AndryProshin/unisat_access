@@ -35,7 +35,8 @@
 
 ### Требования
 
-```requirements.txt:
+```#
+requirements.txt:
 requests>=2.28.0
 python-dotenv>=1.0.0
 ```
@@ -51,7 +52,6 @@ pip install -r requirements.txt
 Используйте Python из QGIS, если нужна встроенная поддержка GDAL (для примеров с GeoTIFF):
 
 ```#
-cmd
 "C:\Program Files\QGIS 3.xx.y\apps\Python3xx\python.exe" -m pip install -r requirements.txt
 ```
 
