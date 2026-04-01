@@ -73,7 +73,7 @@ from unisat_api import Parameters, Metadata
 # Список доступных коллекций
 print(Parameters.list_presets())
 
-# Создание параметров из коллекции с переопределением
+# Формирование параметров запроса на метаданные для указанной коллекции
 params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-01-01 00:00:00",
     "dt": "2024-01-02 00:00:00",
@@ -83,7 +83,7 @@ params = Parameters(collection="sentinel2_boa", params={
     "max_cloudiness": 80
 })
 
-# Получение словаря для запроса
+# Получить параметры в виде словаря
 print(params.to_dict())
 
 # Изменение параметра
@@ -112,7 +112,7 @@ print(params3.to_dict())
 ### Metadata
 
 ```$
-# Создание параметров
+# Формирование набора параметров
 params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-01-01 00:00:00",
     "dt": "2024-01-10 00:00:00",
