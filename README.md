@@ -36,23 +36,8 @@
 ### Требования
 
 ```#
-requirements.txt:
 requests>=2.28.0
 python-dotenv>=1.0.0
-```
-
-### Linux/Unix, Windows
-
-```bash
-pip install -r requirements.txt
-```
-
-### Windows (QGIS Python)
-
-Используйте Python из QGIS, если нужна встроенная поддержка GDAL (для примеров с GeoTIFF):
-
-```#
-"C:\Program Files\QGIS 3.xx.y\apps\Python3xx\python.exe" -m pip install -r requirements.txt
 ```
 
 **Примечание:** GDAL не требуется для работы библиотеки. Он нужен только для запуска примеров `ndvi_demo.py` и `benchmark_read_methods.py`.
@@ -60,6 +45,8 @@ pip install -r requirements.txt
 
 * Linux: `sudo apt install gdal-bin libgdal-dev python3-gdal`
 * Windows: через QGIS или OSGeo4W
+
+Также вы можете использовать Python из QGIS, если нужна встроенная поддержка GDAL
 
 ## Настройка
 
