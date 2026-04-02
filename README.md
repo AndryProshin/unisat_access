@@ -162,6 +162,3 @@ scene.download("download")
 # В плоскую структуру (все файлы в одной папке)
 scene.download("download_flat", flat=True)
 ```
-
-Лицензия
-MIT
