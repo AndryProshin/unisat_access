@@ -4,32 +4,33 @@
 
 ## Структура проекта
 
-* unisat_access/  
-  * unisat_api/ # Основная библиотека  
-    * \_\_init\_\_.py  
-    * config.py # Настройки (переменные окружения)
-    * parameters.py # Класс Parameters
-    * metadata.py # Класс Metadata
-    * scene.py # Класс Scene
-    * exceptions.py # Исключения
-    * utils/
-      * validators.py # Валидаторы
-  * examples/ # Примеры использования
-    * test_parameters.py # Демо работы с классом Parameters
-    * test_metadata.py # Демо работы с классами Metadata и Scene
-    * ndvi_demo.py # Расчёт и склейка NDVI по сценам, полученным в результате запроса
-    * benchmark_read_methods.py # Сравнение методов чтения geotif файлов
-    * check_gdal.py # Проверка поддрежки GDAL
-  * presets/ # JSON-файлы пресетов
-    * collections/ # Наборы параметров и правил, задающих коллекции данных
-    * user_presets/ # Наборы заданных пользователями параметров
-  * tests/ # Юнит-тесты
-    * test_parameters.py
-  * example.py # Простейший пример для ознакомления
-  * data/ # Выходные данные (создаётся при запуске)
-  * requirements.txt
-  * README.md
-  * .env.example
+```text
+📁unisat_access
+└── 📁unisat_api        # Основная библиотека
+    ├── __init__.py
+    ├── config.py       # Настройки (переменные окружения)
+    ├── exceptions.py   # Исключения
+    ├── metadata.py     # Класс Metadata
+    ├── parameters.py   # Класс Parameters
+    ├── scene.py        # Класс Scene
+    └── 📁utils
+        └── validators.py # Валидаторы
+└── 📁presets # JSON-файлы пресетов
+    └── 📁collections   # Наборы параметров и правил, задающих коллекции данных
+    └── 📁user_presets  # Наборы заданных пользователями параметров
+└── 📁examples
+    ├── test_parameters.py        # Демо работы с классом Parameters
+    ├── test_metadata.py          # Демо работы с классами Metadata и Scene
+    ├── check_gdal.py             # Проверка поддрежки GDAL
+    ├── ndvi_demo.py              # Расчёт и склейка NDVI по сценам, полученным в результате запроса
+    └── benchmark_read_methods.py # Сравнение методов чтения geotif файлов
+└── 📁tests             # Юнит-тесты
+└── 📁data              # Выходные данные (создаётся при запуске)
+├── example.py    # Простейший пример для ознакомления
+├── .env.example
+├── README.md
+└── requirements.txt
+```
 
 ## Установка
 
