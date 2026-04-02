@@ -35,7 +35,7 @@
 
 ### Требования
 
-```#
+```requirements
 requests>=2.28.0
 python-dotenv>=1.0.0
 ```
@@ -52,14 +52,14 @@ python-dotenv>=1.0.0
 
 Создайте файл .env в корне проекта (указаны демонстрационные адреса):
 
-```env
+```dotenv
 METADATA_URL=<http://10.10.10.10:8085>
 NGINX_URL=<http://10.10.10.10:8095>
 ```
 
 ## Импорт библиотек
 
-```#
+```python
 import sys
 sys.path.insert(0, "путь/к/unisat_access")
 from unisat_api import Parameters, Metadata
@@ -69,7 +69,7 @@ from unisat_api import Parameters, Metadata
 
 ### Parameters
 
-```#
+```python
 # Список доступных коллекций
 print(Parameters.list_presets())
 
@@ -111,7 +111,7 @@ print(params3.to_dict())
 
 ### Metadata
 
-```$
+```python
 # Формирование набора параметров
 params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-01-01 00:00:00",
@@ -138,7 +138,7 @@ print(f"Доступные продукты: {list(scene.products.keys())}")
 
 ### Scene
 
-```#
+```python
 # Работа со сценой: фрагменты, файлы, ссылки.
 
 # Получение фрагментов с путями к файлам
