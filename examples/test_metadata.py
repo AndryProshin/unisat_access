@@ -10,12 +10,12 @@ from pprint import pprint
 
 # 1. Создаём параметры запроса
 params = Parameters(collection="sentinel2_boa", params={
-    "dt_from": "2024-01-01 00:00:00",
-    "dt": "2024-01-10 00:00:00",
-    "bbox": [43, 43, 45, 45],
+    "dt_from": "2024-08-01 00:00:00",
+    "dt": "2024-08-30 00:00:00",
     "products": ["channel8_l2a", "channel4_l2a"],
+    "bbox": [39, 54, 40, 55],
     "limit": 2,
-    "max_cloudiness": 50
+    "max_cloudiness": 20
 })
 
 # 2. Загружаем метаданные
@@ -23,8 +23,7 @@ metadata = Metadata(params)
 print(f"Найдено сцен: {len(metadata)}\n")
 
 # 3. Работа с первой сценой
-scene = metadata[1]
-
+scene = metadata[0]
 
 print("=== Атрибуты сцены ===")
 print(f"dt: {scene.dt}")
@@ -54,6 +53,10 @@ for i, frag in enumerate(fragments):
     for product, path in http_frag_info.items():
         print(f"  {product}: {path}")
 
-# 7. Загрузка файлов
-#scene.download("download")
-scene.download("download_flat", flat=True)
+# 7. Загрузка файлов (с явным указанием поддиректории)
+result = scene.download(download_subdir="test_download", flat=True)
+print(f"\nРезультат скачивания:")
+print(f"  Директория: {result['download_dir']}")
+print(f"  Файлов: {len(result['files'])}")
+print(f"  Параметры: {result['params_file']}")
+print(f"  Лог: {result['metadata_file']}")

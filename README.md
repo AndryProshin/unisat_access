@@ -1,3 +1,4 @@
+
 # Unisat Access
 
 Библиотека для организации пользовательского доступа к данным спутниковых архивов, реализованных по технологии UNISAT.
@@ -13,24 +14,29 @@
     ├── metadata.py     # Класс Metadata
     ├── parameters.py   # Класс Parameters
     ├── scene.py        # Класс Scene
+    ├── 📁extras        # Опциональные расширения
+    │   └── gdal_scene.py     # GDAL расширение для Scene
     └── 📁utils
         └── validators.py # Валидаторы
-└── 📁presets # JSON-файлы пресетов
+└── 📁presets           # JSON-файлы пресетов
     └── 📁collections   # Наборы параметров и правил, задающих коллекции данных
     └── 📁user_presets  # Наборы заданных пользователями параметров
 └── 📁examples
     ├── test_parameters.py        # Демо работы с классом Parameters
     ├── test_metadata.py          # Демо работы с классами Metadata и Scene
-    ├── check_gdal.py             # Проверка поддрежки GDAL
-    ├── ndvi_demo.py              # Расчёт и склейка NDVI по сценам, полученным в результате запроса
+    ├── gdal_example.py           # Демо работы с GDALScene
+    ├── check_gdal.py             # Проверка поддержки GDAL
+    ├── ndvi_demo.py              # Расчёт и склейка NDVI по сценам
     └── benchmark_read_methods.py # Сравнение методов чтения geotif файлов
 └── 📁tests             # Юнит-тесты
-└── 📁data              # Выходные данные (создаётся при запуске)
-├── example.py    # Простейший пример для ознакомления
+└── 📁data              # Выходные данные (создаётся автоматически)
+    └── 📁download      # Скачанные фрагменты
+    └── 📁processed     # Обработанные данные
+├── example.py          # Простейший пример для ознакомления
 ├── .env.example
 ├── README.md
 └── requirements.txt
-```
+
 
 ## Установка
 
@@ -41,7 +47,10 @@ requests>=2.28.0
 python-dotenv>=1.0.0
 ```
 
-**Примечание:** GDAL не требуется для работы библиотеки. Он нужен только для запуска примеров `ndvi_demo.py` и `benchmark_read_methods.py`.
+**Примечание:** GDAL не требуется для работы баового функционала библиотеки. Используется для:
+* Расширения GDALScene (обработка и склейка сцен)
+* Примеров ndvi_demo.py и benchmark_read_methods.py
+
 Установка GDAL при необходимости:
 
 * Linux: `sudo apt install gdal-bin libgdal-dev python3-gdal`
@@ -139,9 +148,9 @@ print(f"Доступные продукты: {list(scene.products.keys())}")
 
 ### Scene
 
-```python
-# Работа со сценой: фрагменты, файлы, ссылки.
+Работа со сценой: фрагменты, файлы, ссылки.
 
+```python
 # Получение фрагментов с путями к файлам
 fragments = scene.get_fragments()
 print(f"Фрагментов: {len(fragments)}")
@@ -158,7 +167,60 @@ vsicurl_frag = scene.to_vsicurl(fragments[0])
 
 # Скачивание файлов
 # С оригинальной структурой
-scene.download("download")
+result = scene.download(download_subdir="my_download")
 # В плоскую структуру (все файлы в одной папке)
-scene.download("download_flat", flat=True)
+result = scene.download(download_subdir="my_download_flat", flat=True)
+
+# Результат содержит информацию о скачивании
+print(f"Директория: {result['download_dir']}")
+print(f"Скачано файлов: {len(result['files'])}")
 ```
+
+### GDALScene (опциональное расширение)
+
+Требует установки GDAL. Позволяет склеивать фрагменты сцены в один файл, обрезать по bbox и пересэмплировать
+
+```python
+from unisat_api.extras import GDALScene
+
+# Создаём параметры запроса (bbox в WGS84 градусах)
+params = Parameters(collection="sentinel2_boa", params={
+    "dt_from": "2024-08-01 00:00:00",
+    "dt": "2024-08-30 00:00:00",
+    "bbox": [39, 54, 40, 55],  # Рязань в градусах
+    "products": ["channel8_l2a", "channel4_l2a"],
+    "limit": 2,
+    "max_cloudiness": 20
+})
+
+# Загружаем метаданные
+metadata = Metadata(params)
+
+# Обрабатываем сцены
+for scene in metadata:
+    gdal_scene = GDALScene(scene)
+    
+    # Склеиваем фрагменты, обрезаем по bbox, сохраняем
+    result = gdal_scene.save_products(
+        result_subdir="ryazan_processed",
+        resample_to="highest",      # пересэмплировать к максимальному разрешению
+        resample_method="bilinear"  # метод пересэмплинга
+    )
+    
+    print(f"Сохранено: {result['files']}")
+
+# Результат в data/processed/ryazan_processed/
+#   _params.json      - параметры запроса и обработки
+#   _metadata.txt     - лог по сценам
+#   20240828_084506_channel8_l2a.tif
+#   20240828_084506_channel4_l2a.tif
+```
+
+Параметры метода save_products:
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `result_subdir` | `str` | Имя поддиректории внутри `data/processed/` (обязательный) |
+| `products` | `Optional[List[str]]` | Список продуктов для обработки (`None` → все продукты сцены) |
+| `bbox` | `Optional[List[float]]` | [minx, miny, maxx, maxy] в WGS84 градусах (`None` → из параметров сцены) |
+| `resample_to` | `Optional[Union[str, float]]` | Пересэмплирование: `None` (без изменений), `"highest"`, `"lowest"`, или число в метрах |
+| `resample_method` | `str` | Метод пересэмплинга: `"nearest"`, `"bilinear"`, `"cubic"` (по умолчанию `"nearest"`) |

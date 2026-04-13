@@ -3,6 +3,8 @@
 import requests
 from urllib.parse import urlencode
 from pathlib import Path
+from datetime import datetime
+from typing import Optional, List, Dict, Any
 
 from . import config
 
@@ -103,31 +105,68 @@ class Scene:
             "products": self.products,
             "fragments": self._fragments
         }
-    
 
-    def download(self, base_dir: str = "download", flat: bool = False) -> str:
+
+    def download(
+        self,
+        download_subdir: str,
+        flat: bool = False
+    ) -> Dict[str, Any]:
         """
         Скачивает все файлы сцены.
         
         Args:
-            base_dir: базовая директория для сохранения
+            download_subdir: имя поддиректории внутри data/download/ (обязательный параметр)
             flat: если True, все файлы в одну папку с именами YYYYMMDD_hhmmss_<frag_num>_<product>.<ext>
-                  если False, сохраняет оригинальную структуру product/04040/...
+                если False, сохраняет оригинальную структуру product/04040/...
+        
+        Returns:
+            словарь с информацией о скачивании:
+            {
+                "download_dir": путь к директории,
+                "files": список скачанных файлов,
+                "params_file": путь к _params.json,
+                "metadata_file": путь к _metadata.txt
+            }
         """
         fragments = self.get_fragments()
         if not fragments:
             print("Нет фрагментов для скачивания")
             return None
         
-        base_path = Path(base_dir)
-        base_path.mkdir(parents=True, exist_ok=True)
-        
-        log_file = base_path / "metadata.txt"
+        # Определяем директорию скачивания
+        download_path = config.DOWNLOAD_DIR / download_subdir
+        download_path.mkdir(parents=True, exist_ok=True)
         
         # Формируем базовое имя для файлов
-        dt_str = self.dt.replace('-', '').replace(':', '').replace(' ', '_')[:15]  # YYYYMMDD_hhmmss
+        dt_str = self.dt.replace('-', '').replace(':', '').replace(' ', '_')[:15]
         
-        with open(log_file, 'a', encoding='utf-8') as log:
+        # Сохраняем параметры запроса в JSON
+        params_file = download_path / "_params.json"
+        if not params_file.exists():
+            import json
+            download_params = {
+                "query": self._params.copy(),
+                "download": {
+                    "operation": "download",
+                    "flat": flat,
+                    "timestamp": datetime.now().isoformat(),
+                    "package_version": "1.0.0"
+                }
+            }
+            with open(params_file, 'w', encoding='utf-8') as f:
+                json.dump(download_params, f, indent=2, ensure_ascii=False)
+        
+        # Лог-файл для метаданных
+        metadata_file = download_path / "_metadata.txt"
+        file_exists = metadata_file.exists()
+        
+        downloaded_files = []
+        
+        with open(metadata_file, 'a', encoding='utf-8') as log:
+            if not file_exists:
+                log.write("dt|satellite|device|station|fragment|product|original_path|local_path\n")
+            
             for i, frag in enumerate(fragments):
                 http_frag = self.to_http(frag)
                 
@@ -142,10 +181,10 @@ class Scene:
                         if not ext:
                             ext = ".tif"
                         filename = f"{dt_str}_frag{i}_{product_type}{ext}"
-                        local_path = base_path / filename
+                        local_path = download_path / filename
                     else:
                         # Оригинальная структура
-                        local_path = base_path / original_path
+                        local_path = download_path / original_path
                         local_path.parent.mkdir(parents=True, exist_ok=True)
                     
                     print(f"Скачивание: {product_type} -> {local_path}")
@@ -157,7 +196,15 @@ class Scene:
                             f.write(chunk)
                     
                     log.write(f"{self.dt}|{self.satellite}|{self.device}|{self.station}|{i}|{product_type}|{original_path}|{local_path}\n")
+                    downloaded_files.append(str(local_path))
         
-        print(f"\nФайлы сохранены в: {base_path}")
-        print(f"Лог: {log_file}")
-        return str(base_path)
+        print(f"\nФайлы сохранены в: {download_path}")
+        print(f"Лог: {metadata_file}")
+        print(f"Параметры: {params_file}")
+        
+        return {
+            "download_dir": str(download_path),
+            "files": downloaded_files,
+            "params_file": str(params_file),
+            "metadata_file": str(metadata_file)
+        }

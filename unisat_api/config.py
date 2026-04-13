@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Дефолтные значения
-#DEFAULT_METADATA_URL = "http://192.168.80.137:8085"
-#DEFAULT_NGINX_URL = "http://192.168.80.137:8095"
 DEFAULT_PRESETS_DIR = "./presets"
 DEFAULT_METADATA_TIMEOUT = 30
 
@@ -27,3 +25,20 @@ METADATA_TIMEOUT = int(os.getenv("METADATA_TIMEOUT", DEFAULT_METADATA_TIMEOUT))
 # Директории для пресетов
 COLLECTIONS_DIR = PRESETS_DIR / "collections"
 USER_PRESETS_DIR = PRESETS_DIR / "user_presets"
+
+# ========== НОВОЕ: определяем корень проекта и директорию data ==========
+# Корень проекта (директория, содержащая unisat_api)
+# __file__ = /path/to/unisat_access/unisat_api/config.py
+# .parent = /path/to/unisat_access/unisat_api/
+# .parent.parent = /path/to/unisat_access/
+PROJECT_ROOT = Path(__file__).parent.parent
+
+# Директория для данных (можно переопределить через переменную окружения)
+DATA_DIR = Path(os.getenv("UNISAT_DATA_DIR", PROJECT_ROOT / "data"))
+DOWNLOAD_DIR = DATA_DIR / "download"
+PROCESSED_DIR = DATA_DIR / "processed"
+
+# Создаём директории, если их нет
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
