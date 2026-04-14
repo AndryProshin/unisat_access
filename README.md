@@ -225,4 +225,4 @@ for scene in metadata:
 |products           | Optional[List[str]]        | Список продуктов для обработки (None → все продукты сцены)
 |bbox               | Optional[List[float]]      | [minx, miny, maxx, maxy] в WGS84 градусах (None → из параметров сцены)
 |resample_to        | Optional[Union[str, float]]| Пересэмплирование: None (без изменений), `highest`, `lowest`, или число в метрах  
-|resample_method    | str                        | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию *nearest*)
+|resample_method    | str                        | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию `nearest`)
