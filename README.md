@@ -36,7 +36,7 @@
 ├── .env.example
 ├── README.md
 └── requirements.txt
-
+```
 
 ## Установка
 
@@ -48,6 +48,7 @@ python-dotenv>=1.0.0
 ```
 
 **Примечание:** GDAL не требуется для работы баового функционала библиотеки. Используется для:
+
 * Расширения GDALScene (обработка и склейка сцен)
 * Примеров ndvi_demo.py и benchmark_read_methods.py
 
@@ -217,6 +218,7 @@ for scene in metadata:
 ```
 
 Параметры метода save_products:
+
 | Параметр | Тип | Описание |
 |----------|-----|----------|
 | `result_subdir` | `str` | Имя поддиректории внутри `data/processed/` (обязательный) |
