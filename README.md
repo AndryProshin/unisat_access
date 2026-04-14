@@ -49,15 +49,15 @@ python-dotenv>=1.0.0
 
 **Примечание:** GDAL не требуется для работы баового функционала библиотеки. Используется для:
 
-* Расширения GDALScene (обработка и склейка сцен)
-* Примеров ndvi_demo.py и benchmark_read_methods.py
+* Расширения `GDALScene` (обработка и склейка сцен)
+* Примеров `ndvi_demo.py` и `benchmark_read_methods.py`
 
 Установка GDAL при необходимости:
 
 * Linux: `sudo apt install gdal-bin libgdal-dev python3-gdal`
-* Windows: OSGeo4W
+* Windows: `OSGeo4W`
 
-Также вы можете использовать Python из QGIS, если нужна встроенная поддержка GDAL
+Также вы можете использовать Python из `QGIS`, если нужна встроенная поддержка `GDAL`
 
 ## Настройка
 
@@ -224,5 +224,5 @@ for scene in metadata:
 |result_subdir      | str                        | Имя поддиректории внутри data/processed/ (обязательный)
 |products           | Optional[List[str]]        | Список продуктов для обработки (None → все продукты сцены)
 |bbox               | Optional[List[float]]      | [minx, miny, maxx, maxy] в WGS84 градусах (None → из параметров сцены)
-|resample_to        | Optional[Union[str, float]]| Пересэмплирование: None (без изменений), "highest", "lowest", или число в метрах  
-|resample_method    | str                        | Метод пересэмплинга: "nearest", "bilinear", "cubic" (по умолчанию "nearest")
+|resample_to        | Optional[Union[str, float]]| Пересэмплирование: None (без изменений), `highest`, `lowest`, или число в метрах  
+|resample_method    | str                        | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию *nearest*)
