@@ -224,7 +224,7 @@ for scene in metadata:
 |resample_to        | Optional[Union[str, float]]| Пересэмплирование: None (без изменений), `highest`, `lowest`, или число в метрах  
 |resample_method    | str                        | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию `nearest`)
 
-### Маски
+### Расширение Mask
 
 Универсальный класс Mask позволяет загружать и применять маски из любых источников
 
@@ -247,7 +247,7 @@ masked_array = mask.apply_to_array(array)
 mask.apply_to_file("input.tif", "output.tif")
 ```
 
-### Спектральные индексы
+### Расширение "Спектральные индексы"
 
 ```python
 from processing.indices.sentinel2 import compute_ndvi, compute_evi, Sentinel2Indices
@@ -266,7 +266,7 @@ my_index = SpectralIndex(
 result = compute_index(scene, my_index, "custom_results")
 ```
 
-### Маски для Sentinel-2 (SCL)
+### Расширение "Маски для Sentinel-2 (SCL)"
 
 ```python
 from processing.masks.sentinel2 import get_scl_mask_for_scene, SCL_GOOD_CLASSES
