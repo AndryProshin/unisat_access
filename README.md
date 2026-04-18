@@ -174,7 +174,9 @@ print(f"Директория: {result['download_dir']}")
 print(f"Скачано файлов: {len(result['files'])}")
 ```
 
-### Расширение GDALScene
+## Расширения для обработки данных `processing`
+
+### GDALScene
 
 Требует установки GDAL. Позволяет склеивать фрагменты сцены в один файл, обрезать по bbox и пересэмплировать
 
@@ -224,7 +226,7 @@ for scene in metadata:
 |resample_to        | Optional[Union[str, float]]| Пересэмплирование: None (без изменений), `highest`, `lowest`, или число в метрах  
 |resample_method    | str                        | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию `nearest`)
 
-### Расширение Mask
+### Mask
 
 Универсальный класс Mask позволяет загружать и применять маски из любых источников
 
@@ -247,7 +249,7 @@ masked_array = mask.apply_to_array(array)
 mask.apply_to_file("input.tif", "output.tif")
 ```
 
-### Расширение "Спектральные индексы"
+### Спектральные индексы
 
 ```python
 from processing.indices.sentinel2 import compute_ndvi, compute_evi, Sentinel2Indices
@@ -266,7 +268,7 @@ my_index = SpectralIndex(
 result = compute_index(scene, my_index, "custom_results")
 ```
 
-### Расширение "Маски для Sentinel-2 (SCL)"
+### Маски для Sentinel-2 (SCL)
 
 ```python
 from processing.masks.sentinel2 import get_scl_mask_for_scene, SCL_GOOD_CLASSES
@@ -283,7 +285,7 @@ mask = get_scl_mask_for_scene(
 result = compute_ndvi(scene, "ndvi_clean", mask=mask)
 ```
 
-### Директория данных
+#### Структура директорий для данных
 
 Все данные сохраняются в data/:
 
@@ -298,7 +300,7 @@ data/
         └── *.tif
 ```
 
-### Примечания
+#### Примечания
 
 * BBOX указывается в градусах WGS84 (долгота, широта)
 * GDALScene автоматически перепроецирует bbox в проекцию фрагментов
@@ -307,4 +309,3 @@ data/
 * _metadata.txt — CSV-подобный лог для всех сцен
 * Пути к данным вычисляются относительно корня проекта
 * Маски универсальны и могут быть созданы из любого источника (файл, массив, SCL)
-
