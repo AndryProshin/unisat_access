@@ -223,3 +223,88 @@ for scene in metadata:
 |bbox               | Optional[List[float]]      | [minx, miny, maxx, maxy] в WGS84 градусах (None → из параметров сцены)
 |resample_to        | Optional[Union[str, float]]| Пересэмплирование: None (без изменений), `highest`, `lowest`, или число в метрах  
 |resample_method    | str                        | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию `nearest`)
+
+### Маски
+
+Универсальный класс Mask позволяет загружать и применять маски из любых источников
+
+```python
+from processing.masks import Mask
+
+# Загрузка маски из файла
+mask = Mask.from_file("path/to/mask.tif")
+
+# Загрузка из numpy массива
+mask = Mask.from_array(binary_array)
+
+# Комбинирование масок
+combined = mask1 & mask2  # логическое И
+combined = mask1 | mask2  # логическое ИЛИ
+inverted = ~mask          # инверсия
+
+# Применение маски к данным
+masked_array = mask.apply_to_array(array)
+mask.apply_to_file("input.tif", "output.tif")
+```
+
+### Спектральные индексы
+
+```python
+from processing.indices.sentinel2 import compute_ndvi, compute_evi, Sentinel2Indices
+from processing.indices.base import SpectralIndex, compute_index
+
+# Быстрый NDVI
+result = compute_ndvi(scene, "ndvi_results")
+
+# Пользовательский индекс
+my_index = SpectralIndex(
+    name="MY_INDEX",
+    expression="(nir - red) / (nir + red + 0.1)",
+    bands={"nir": "channel8_l2a", "red": "channel4_l2a"},
+    scale=10000
+)
+result = compute_index(scene, my_index, "custom_results")
+```
+
+### Маски для Sentinel-2 (SCL)
+
+```python
+from processing.masks.sentinel2 import get_scl_mask_for_scene, SCL_GOOD_CLASSES
+
+# Создание маски из SCL
+mask = get_scl_mask_for_scene(
+    scene,
+    good_classes=SCL_GOOD_CLASSES['vegetation_water'],
+    dilate_clouds=2,
+    dilate_shadows=3
+)
+
+# Применение маски к индексу
+result = compute_ndvi(scene, "ndvi_clean", mask=mask)
+```
+
+### Директория данных
+
+Все данные сохраняются в data/:
+
+```text
+data/
+├── download/          # Сырые фрагменты (scene.download)
+│   └── my_download/
+└── processed/         # Обработанные данные (GDALScene)
+    └── ryazan_processed/
+        ├── _params.json
+        ├── _metadata.txt
+        └── *.tif
+```
+
+### Примечания
+
+* BBOX указывается в градусах WGS84 (долгота, широта)
+* GDALScene автоматически перепроецирует bbox в проекцию фрагментов
+* Метаданные сохраняются в двух форматах:
+* _params.json — полные параметры запроса и обработки
+* _metadata.txt — CSV-подобный лог для всех сцен
+* Пути к данным вычисляются относительно корня проекта
+* Маски универсальны и могут быть созданы из любого источника (файл, массив, SCL)
+
