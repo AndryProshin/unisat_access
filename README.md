@@ -7,35 +7,35 @@
 
 ```text
 📁unisat_access
-└── 📁unisat_api        # Основная библиотека
-    ├── __init__.py
-    ├── config.py       # Настройки (переменные окружения)
-    ├── exceptions.py   # Исключения
-    ├── metadata.py     # Класс Metadata
-    ├── parameters.py   # Класс Parameters
-    ├── scene.py        # Класс Scene
-    ├── 📁extras        # Опциональные расширения
-    │   └── gdal_scene.py     # GDAL расширение для Scene
-    └── 📁utils
-        └── validators.py # Валидаторы
-└── 📁presets           # JSON-файлы пресетов
-    └── 📁collections   # Наборы параметров и правил, задающих коллекции данных
-    └── 📁user_presets  # Наборы заданных пользователями параметров
-└── 📁examples
-    ├── test_parameters.py        # Демо работы с классом Parameters
-    ├── test_metadata.py          # Демо работы с классами Metadata и Scene
-    ├── gdal_example.py           # Демо работы с GDALScene
-    ├── check_gdal.py             # Проверка поддержки GDAL
-    ├── ndvi_demo.py              # Расчёт и склейка NDVI по сценам
-    └── benchmark_read_methods.py # Сравнение методов чтения geotif файлов
-└── 📁tests             # Юнит-тесты
-└── 📁data              # Выходные данные (создаётся автоматически)
-    └── 📁download      # Скачанные фрагменты
-    └── 📁processed     # Обработанные данные
-├── example.py          # Простейший пример для ознакомления
-├── .env.example
-├── README.md
-└── requirements.txt
+├── 📁unisat_api
+│   ├── config.py                   # Настройки, переменные окружения
+│   ├── parameters.py               # Класс Parameters (общий для всех запросов)
+│   ├── metadata.py                 # Класс Metadata (архивный режим, поиск сцен)
+│   ├── scene.py                    # Класс Scene (архивный режим, фрагменты)
+├── 📁processing
+│   ├── 📁gdal
+│   │   ├── utils.py                # Чтение/запись GeoTIFF, утилиты
+│   │   └── scene.py                # GDALScene (склейка, обрезка)
+│   ├── 📁indices
+│   │   ├── base.py                 # SpectralIndex, IndexCalculator
+│   │   └── sentinel2.py            # Sentinel2Indices, compute_ndvi и др.
+│   └── 📁masks
+│       ├── base.py                 # Mask (универсальный класс)
+│       └── sentinel2.py            # SCL маски для Sentinel-2
+├── 📁presets
+│   ├── 📁collections               # Параметры (пресеты) коллекций (sentinel2_boa и др.)
+│   └── 📁user_presets              # Пользовательские пресеты
+├── 📁examples
+│   ├── parameters_demo.py          # Демо работы с Parameters
+│   ├── metadata_demo.py            # Демо работы с Metadata и Scene
+│   ├── indices_demo.py             # Демо спектральных индексов
+│   └── gdal_bare_demo.py           # Пример использования GDAL без надстроек
+├── 📁data
+│   ├── 📁download                  # Скачанные фрагменты
+│   └── 📁processed                 # Обработанные данные
+├── .env.example                    # Пример переменных окружения
+├── README.md                       # Документация
+└── requirements.txt                # Зависимости (requests, python-dotenv)```
 ```
 
 ## Установка
@@ -47,12 +47,9 @@ requests>=2.28.0
 python-dotenv>=1.0.0
 ```
 
-**Примечание:** GDAL не требуется для работы базового функционала библиотеки. Используется для:
+**Примечание:** GDAL не требуется для работы функционала библиотеки unisat_api, но используется для работы инструментов обработки данных processing
 
-* Расширения `GDALScene` (обработка и склейка сцен)
-* Примеров `ndvi_demo.py` и `benchmark_read_methods.py`
-
-Установка GDAL при необходимости:
+Установка GDAL:
 
 * Linux: `sudo apt install gdal-bin libgdal-dev python3-gdal`
 * Windows: `OSGeo4W`
@@ -182,7 +179,7 @@ print(f"Скачано файлов: {len(result['files'])}")
 Требует установки GDAL. Позволяет склеивать фрагменты сцены в один файл, обрезать по bbox и пересэмплировать
 
 ```python
-from unisat_api.extras import GDALScene
+from processing.gdal.scene import GDALScene
 
 # Создаём параметры запроса (bbox в WGS84 градусах)
 params = Parameters(collection="sentinel2_boa", params={

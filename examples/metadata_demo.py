@@ -12,7 +12,7 @@ from pprint import pprint
 params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-08-01 00:00:00",
     "dt": "2024-08-30 00:00:00",
-    "products": ["channel8_l2a", "channel4_l2a"],
+    "products": ["channel8_l2a", "channel4_l2a", "s2_scl"],
     "bbox": [39, 54, 40, 55],
     "limit": 2,
     "max_cloudiness": 20

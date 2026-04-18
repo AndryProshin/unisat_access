@@ -13,8 +13,10 @@ from typing import Optional, List, Dict, Any, Union
 
 from osgeo import gdal, osr, ogr
 
-from ..scene import Scene
-from .. import config
+from unisat_api.scene import Scene
+from unisat_api import config
+
+from .utils import read_raster, write_geotiff, get_raster_statistics
 
 
 class GDALScene:
