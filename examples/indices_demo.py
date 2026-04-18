@@ -13,16 +13,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from unisat_api.parameters import Parameters
 from unisat_api.metadata import Metadata
-from processing import (
-    GDALScene,
-    get_scl_mask_for_scene,
+
+from processing import GDALScene
+from processing.indices import (
     compute_ndvi,
     compute_evi,
     compute_ndwi,
     Sentinel2Indices,
-    compute_index,
-    SCL_GOOD_CLASSES
+    SpectralIndex,
+    IndexCalculator,
+    compute_index
 )
+
+from processing.masks import get_scl_mask_for_scene, SCL_GOOD_CLASSES
 
 
 def main():
@@ -105,7 +108,7 @@ def main():
 
     # 8. Пользовательский индекс (своя формула)
     print("\n7. Пользовательский индекс...")
-    from processing.indices.base import SpectralIndex, compute_index
+    from processing.indices import SpectralIndex, compute_index
 
     my_index = SpectralIndex(
         name="MY_INDEX",

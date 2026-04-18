@@ -181,7 +181,7 @@ print(f"Скачано файлов: {len(result['files'])}")
 Требует установки GDAL. Позволяет склеивать фрагменты сцены в один файл, обрезать по bbox и пересэмплировать
 
 ```python
-from processing.gdal.scene import GDALScene
+from processing import GDALScene
 
 # Создаём параметры запроса (bbox в WGS84 градусах)
 params = Parameters(collection="sentinel2_boa", params={
@@ -252,8 +252,7 @@ mask.apply_to_file("input.tif", "output.tif")
 ### Спектральные индексы
 
 ```python
-from processing.indices.sentinel2 import compute_ndvi, compute_evi, Sentinel2Indices
-from processing.indices.base import SpectralIndex, compute_index
+from processing.indices import compute_ndvi, compute_evi, Sentinel2Indices, SpectralIndex, compute_index
 
 # Быстрый NDVI
 result = compute_ndvi(scene, "ndvi_results")
@@ -271,7 +270,7 @@ result = compute_index(scene, my_index, "custom_results")
 ### Маски для Sentinel-2 (SCL)
 
 ```python
-from processing.masks.sentinel2 import get_scl_mask_for_scene, SCL_GOOD_CLASSES
+from processing.masks import get_scl_mask_for_scene, SCL_GOOD_CLASSES
 
 # Создание маски из SCL
 mask = get_scl_mask_for_scene(
