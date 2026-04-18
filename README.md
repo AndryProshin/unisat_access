@@ -56,7 +56,7 @@ python-dotenv>=1.0.0
 
 Также вы можете использовать Python из `QGIS`, если нужна встроенная поддержка `GDAL`
 
-## Настройка
+### Настройка
 
 Создайте файл .env в корне проекта (указаны демонстрационные адреса):
 
@@ -65,15 +65,15 @@ METADATA_URL=<http://10.10.10.10:8085>
 NGINX_URL=<http://10.10.10.10:8095>
 ```
 
-## Импорт библиотек unisat_api
+## Основные классы
+
+### Импорт библиотек unisat_api
 
 ```python
 import sys
 sys.path.insert(0, "путь/к/unisat_access")
 from unisat_api import Parameters, Metadata
 ```
-
-## Основные классы
 
 ### Parameters
 
