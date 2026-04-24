@@ -316,4 +316,3 @@ data/
         ├── _metadata.txt
         └── *.tif
 ```
-
