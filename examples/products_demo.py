@@ -13,7 +13,7 @@ params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-07-18 00:00:00",
     "dt": "2024-08-30 00:00:00",
     "bbox": [39, 54, 40, 55],
-    "products": ["channel8_l2a", "channel4_l2a", "s2_scl"],
+    "products": ["channel8_l2a", "channel4_l2a", "s2_scl", "v_color"],
     "max_cloudiness": 20
 })
 
@@ -33,7 +33,7 @@ print(f"Все продукты: {list(scene.products.keys())}\n")
 # 4. Получить два продукта
 print("=== 1. Два продукта (channel8_l2a, channel4_l2a) ===")
 scene.get_products(
-    products=["channel8_l2a", "channel4_l2a"],
+    products=["channel8_l2a", "v_color"],
     products_subdir="products_two",
     max_size=1024
 )
