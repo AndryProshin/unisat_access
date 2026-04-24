@@ -271,20 +271,20 @@ class Scene:
         query_string = urlencode(params)
         return f"{config.PRODUCT_BASE_URL}/get_map.pl?{query_string}"
 
-    def download_product(
+    def get_product(
         self,
         *,
         product: str,
-        download_subdir: str,
+        products_subdir: str,
         max_size: Optional[int] = None,
         output_path: Optional[str] = None
     ) -> str:
         """
-        Скачивает готовый растр продукта (PNG).
+        Получает растровый продукт (PNG) и сохраняет в файл.
         
         Args:
             product: имя продукта
-            download_subdir: поддиректория внутри data/download/ (обязательный)
+            products_subdir: поддиректория внутри data/products/ (обязательный)
             max_size: максимальный размер по длинной стороне (пикселей)
             output_path: путь для сохранения (None → авто-имя)
         """
@@ -323,16 +323,16 @@ class Scene:
             url = f"{config.PRODUCT_BASE_URL}/get_map.pl?{query_string}"
         
         if output_path is None:
-            download_path = config.DOWNLOAD_DIR / download_subdir
-            download_path.mkdir(parents=True, exist_ok=True)
+            save_path = config.PRODUCTS_DIR / products_subdir
+            save_path.mkdir(parents=True, exist_ok=True)
             dt_str = self.dt.replace('-', '').replace(':', '').replace(' ', '_')[:15]
             filename = f"{dt_str}_{product}.png"
-            output_path = str(download_path / filename)
+            output_path = str(save_path / filename)
         else:
             output_path = str(Path(output_path))
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         
-        print(f"Скачивание продукта: {product} -> {output_path}")
+        print(f"Получение продукта: {product} -> {output_path}")
         response = requests.get(url, stream=True)
         response.raise_for_status()
         
@@ -349,19 +349,19 @@ class Scene:
         
         return output_path
 
-    def download_products(
+    def get_products(
         self,
         *,
         products: List[str],
-        download_subdir: str,
+        products_subdir: str,
         max_size: Optional[int] = None
     ) -> List[str]:
         """
-        Скачивает PNG для указанных продуктов.
+        Получает несколько продуктов и сохраняет в указанную директорию.
         
         Args:
             products: список имён продуктов
-            download_subdir: поддиректория внутри data/download/ (обязательный)
+            products_subdir: поддиректория внутри data/products/ (обязательный)
             max_size: максимальный размер по длинной стороне (пикселей)
         """
         downloaded = []
@@ -369,21 +369,21 @@ class Scene:
             if product not in self.products:
                 warnings.warn(f"Product '{product}' not found in scene, skipping", UserWarning)
                 continue
-            path = self.download_product(product=product, download_subdir=download_subdir, max_size=max_size)
+            path = self.get_product(product=product, products_subdir=products_subdir, max_size=max_size)
             downloaded.append(path)
         return downloaded
 
-    def download_all_products(
+    def get_all_products(
         self,
         *,
-        download_subdir: str,
+        products_subdir: str,
         max_size: Optional[int] = None
     ) -> List[str]:
         """
-        Скачивает PNG для всех продуктов сцены.
+        Получает все продукты сцены и сохраняет в указанную директорию.
         
         Args:
-            download_subdir: поддиректория внутри data/download/ (обязательный)
+            products_subdir: поддиректория внутри data/products/ (обязательный)
             max_size: максимальный размер по длинной стороне (пикселей)
         """
-        return self.download_products(products=list(self.products.keys()), download_subdir=download_subdir, max_size=max_size)
+        return self.get_products(products=list(self.products.keys()), products_subdir=products_subdir, max_size=max_size)

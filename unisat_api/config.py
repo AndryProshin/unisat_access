@@ -50,3 +50,7 @@ if not PRODUCT_BASE_URL:
 UKEY = os.getenv("UKEY")
 if not UKEY:
     raise ValueError("UKEY must be set in .env or environment")
+
+# Директория для продуктов (PNG)
+PRODUCTS_DIR = DATA_DIR / "products"
+PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)

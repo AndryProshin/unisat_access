@@ -29,11 +29,12 @@
 │   ├── parameters_demo.py          # Демо работы с Parameters
 │   ├── metadata_demo.py            # Демо работы с Metadata и Scene
 │   ├── indices_demo.py             # Демо спектральных индексов
-│   ├── products_demo.py            # демо скачивания продуктов в виде растра PNG   
+│   ├── products_demo.py            # Демо получения растровых продуктов (PNG)
 |   └── gdal_bare_demo.py           # Пример использования GDAL без надстроек
 ├── 📁data
 │   ├── 📁download                  # Скачанные фрагменты
-│   └── 📁processed                 # Обработанные данные
+│   |── 📁processed                 # Обработанные данные
+│   └── 📁products                  # Полученные физические и виртуальные продукты 
 ├── .env.example                    # Пример переменных окружения
 ├── README.md                       # Документация
 └── requirements.txt                # Зависимости (requests, python-dotenv)```
@@ -80,6 +81,8 @@ from unisat_api import Parameters, Metadata
 
 ### Parameters
 
+Класс Parameters — формирование параметров запроса к серверу метаданных с поддержкой коллекций, пользовательских пресетов и валидацией.
+
 ```python
 # Список доступных коллекций
 print(Parameters.list_presets())
@@ -122,6 +125,8 @@ print(params3.to_dict())
 
 ### Metadata
 
+Класс Metadata — загрузка метаданных на основе параметров запроса и итерация по сценам.
+
 ```python
 # Формирование набора параметров
 params = Parameters(collection="sentinel2_boa", params={
@@ -149,7 +154,10 @@ print(f"Доступные продукты: {list(scene.products.keys())}")
 
 ### Scene
 
-Работа со сценой: фрагменты, файлы, ссылки.
+Класс Scene — работа со сценой: получение фрагментов, HTTP/VSICURL-ссылок, скачивание исходных данных и получение растровых продуктов (PNG) по области.
+
+**Примечание:** Продукты, начинающиеся с `_` или `v_`, считаются виртуальными.  
+  Для них `get_fragments()` выдаёт предупреждение, методы `get_products*` работают штатно
 
 ```python
 # Получение фрагментов с путями к файлам
@@ -176,11 +184,10 @@ result = scene.download(download_subdir="my_download_flat", flat=True)
 print(f"Директория: {result['download_dir']}")
 print(f"Скачано файлов: {len(result['files'])}")
 
-# Скачивание растровых продуктов (PNG)
-scene.download_product(product="channel8_l2a", download_subdir="products_demo", max_size=1024)
-scene.download_products(products=["channel8_l2a", "channel4_l2a"], download_subdir="products_demo", max_size=1024)
-scene.download_all_products(download_subdir="products_demo", max_size=1024)
-```
+# Получение физических или виртуальных продуктов в виде растра PNG
+scene.get_product(product="channel8_l2a", products_subdir="products_demo", max_size=1024)
+scene.get_products(products=["channel8_l2a", "channel4_l2a"], products_subdir="products_demo", max_size=1024)
+scene.get_all_products(products_subdir="products_demo", max_size=1024)```
 
 ## Расширения для обработки данных `processing`
 
@@ -315,4 +322,7 @@ data/
         ├── _params.json
         ├── _metadata.txt
         └── *.tif
+└── products/          # Полученные продукты (scene.get_*_products)
+    └── products_all/
+        └── *.png        
 ```
