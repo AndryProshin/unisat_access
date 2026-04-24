@@ -29,7 +29,8 @@
 │   ├── parameters_demo.py          # Демо работы с Parameters
 │   ├── metadata_demo.py            # Демо работы с Metadata и Scene
 │   ├── indices_demo.py             # Демо спектральных индексов
-│   └── gdal_bare_demo.py           # Пример использования GDAL без надстроек
+│   ├── products_demo.py            # демо скачивания продуктов в виде растра PNG   
+|   └── gdal_bare_demo.py           # Пример использования GDAL без надстроек
 ├── 📁data
 │   ├── 📁download                  # Скачанные фрагменты
 │   └── 📁processed                 # Обработанные данные
@@ -63,6 +64,8 @@ python-dotenv>=1.0.0
 ```dotenv
 METADATA_URL=<http://10.10.10.10:8085>
 NGINX_URL=<http://10.10.10.10:8095>
+PRODUCT_BASE_URL=http://some.ru/smiswms
+UKEY=ваш_ключ
 ```
 
 ## Основные классы `unisat_api`
@@ -172,6 +175,11 @@ result = scene.download(download_subdir="my_download_flat", flat=True)
 # Результат содержит информацию о скачивании
 print(f"Директория: {result['download_dir']}")
 print(f"Скачано файлов: {len(result['files'])}")
+
+# Скачивание растровых продуктов (PNG)
+scene.download_product(product="channel8_l2a", download_subdir="products_demo", max_size=1024)
+scene.download_products(products=["channel8_l2a", "channel4_l2a"], download_subdir="products_demo", max_size=1024)
+scene.download_all_products(download_subdir="products_demo", max_size=1024)
 ```
 
 ## Расширения для обработки данных `processing`

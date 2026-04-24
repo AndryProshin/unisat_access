@@ -35,12 +35,12 @@ def main():
 
     # 1. Параметры запроса (Рязань, август 2024)
     params = Parameters(collection="sentinel2_boa", params={
-        "dt_from": "2024-08-01 00:00:00",
-        "dt": "2024-08-15 00:00:00",
+        "dt_from": "2025-08-01 00:00:00",
+        "dt": "2025-09-01 00:00:00",
         "bbox": [39.5, 54.5, 40.0, 54.8],  # небольшой участок под Рязанью
         "products": ["channel8_l2a", "channel4_l2a", "channel3_l2a", "channel2_l2a", "s2_scl"],
         "limit": 2,
-        "max_cloudiness": 50
+        "max_cloudiness": 20
     })
 
     # 2. Загрузка метаданных

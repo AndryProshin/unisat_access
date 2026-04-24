@@ -42,3 +42,11 @@ PROCESSED_DIR = DATA_DIR / "processed"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+PRODUCT_BASE_URL = os.getenv("PRODUCT_BASE_URL")
+if not PRODUCT_BASE_URL:
+    raise ValueError("PRODUCT_BASE_URL must be set in .env or environment")
+
+UKEY = os.getenv("UKEY")
+if not UKEY:
+    raise ValueError("UKEY must be set in .env or environment")

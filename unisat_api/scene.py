@@ -1,10 +1,11 @@
 # scene.py
 
 import requests
+import warnings
 from urllib.parse import urlencode
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 from . import config
 
@@ -37,15 +38,30 @@ class Scene:
     def products(self) -> dict:
         return self._data["products"]
     
+    def _classify_products(self) -> Tuple[List[str], List[str]]:
+        """Возвращает (physical_products, virtual_products)"""
+        physical = []
+        virtual = []
+        for product_name in self.products.keys():
+            if product_name.startswith(('_', 'v_')):
+                virtual.append(product_name)
+            else:
+                physical.append(product_name)
+        return physical, virtual
+    
     def _load_fragments(self):
         """Загружает фрагменты с сервера"""
+        physical, _ = self._classify_products()
+        if not physical:
+            raise ValueError("No physical products found in scene")
+        
         params = {
             "request": "GetSeanceProducts",
             "dt": self.dt,
             "satellite": self.satellite,
             "device": self.device,
             "station": self.station,
-            "products": ','.join(self.products.keys()),
+            "products": ','.join(physical),
             "bbox": ','.join(str(x) for x in self._params["bbox"])
         }
         
@@ -57,7 +73,15 @@ class Scene:
         self._fragments = response.json()
     
     def get_fragments(self):
-        """Возвращает список фрагментов с путями к файлам"""
+        """Возвращает список фрагментов с путями к файлам (только для физических продуктов)"""
+        physical, virtual = self._classify_products()
+        
+        if virtual:
+            warnings.warn(f"Virtual products skipped: {', '.join(virtual)}", UserWarning)
+        
+        if not physical:
+            raise ValueError("No physical products found in scene")
+        
         if self._fragments is None:
             self._load_fragments()
         
@@ -65,7 +89,8 @@ class Scene:
         for frag in self._fragments:
             fragment = {}
             for product_type, files in frag["products_info"].items():
-                fragment[product_type] = files["product_file"]
+                if product_type in physical:
+                    fragment[product_type] = files["product_file"]
             result.append(fragment)
         
         return result
@@ -105,7 +130,6 @@ class Scene:
             "products": self.products,
             "fragments": self._fragments
         }
-
 
     def download(
         self,
@@ -208,3 +232,158 @@ class Scene:
             "params_file": str(params_file),
             "metadata_file": str(metadata_file)
         }
+
+    # ============================================
+    # МЕТОДЫ ДЛЯ ПОЛУЧЕНИЯ РАСТРОВЫХ ИЗОБРАЖЕНИЙ (PNG)
+    # ============================================
+
+    def _get_product_uid(self, product: str) -> str:
+        """Возвращает uid продукта для запроса PNG"""
+        if product not in self.products:
+            raise ValueError(f"Product '{product}' not found in scene")
+        return self.products[product]["id"]
+
+    def _build_product_url(self, product: str, width: int, height: int) -> str:
+        """Формирует URL для запроса PNG продукта"""
+        bbox = self._params.get("bbox")
+        if not bbox:
+            raise ValueError("bbox not found in scene parameters")
+        
+        bbox_str = ",".join(str(x) for x in bbox)
+        uid = self._get_product_uid(product)
+        
+        params = {
+            "layers": "unisat",
+            "db_pkg_mode": "hrsat",
+            "FORMAT": "png",
+            "WIDTH": width,
+            "HEIGHT": height,
+            "BBOX": bbox_str,
+            "EXCEPTIONS": "xml",
+            "SERVICE": "WMS",
+            "REQUEST": "GetMap",
+            "transparent": 1,
+            "unisat_uids": uid,
+            "server_id": "nffc_hrsatdb",
+            "ukey": config.UKEY
+        }
+        
+        query_string = urlencode(params)
+        return f"{config.PRODUCT_BASE_URL}/get_map.pl?{query_string}"
+
+    def download_product(
+        self,
+        *,
+        product: str,
+        download_subdir: str,
+        max_size: Optional[int] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """
+        Скачивает готовый растр продукта (PNG).
+        
+        Args:
+            product: имя продукта
+            download_subdir: поддиректория внутри data/download/ (обязательный)
+            max_size: максимальный размер по длинной стороне (пикселей)
+            output_path: путь для сохранения (None → авто-имя)
+        """
+        bbox = self._params.get("bbox")
+        if not bbox:
+            raise ValueError("bbox not found in scene parameters")
+        
+        width_m = bbox[2] - bbox[0]
+        height_m = bbox[3] - bbox[1]
+        
+        if max_size is not None:
+            if width_m >= height_m:
+                width = max_size
+                height = int(max_size * height_m / width_m)
+            else:
+                height = max_size
+                width = int(max_size * width_m / height_m)
+            url = self._build_product_url(product, width, height)
+        else:
+            bbox_str = ",".join(str(x) for x in bbox)
+            uid = self._get_product_uid(product)
+            params = {
+                "layers": "unisat",
+                "db_pkg_mode": "hrsat",
+                "FORMAT": "png",
+                "BBOX": bbox_str,
+                "EXCEPTIONS": "xml",
+                "SERVICE": "WMS",
+                "REQUEST": "GetMap",
+                "transparent": 1,
+                "unisat_uids": uid,
+                "server_id": "nffc_hrsatdb",
+                "ukey": config.UKEY
+            }
+            query_string = urlencode(params)
+            url = f"{config.PRODUCT_BASE_URL}/get_map.pl?{query_string}"
+        
+        if output_path is None:
+            download_path = config.DOWNLOAD_DIR / download_subdir
+            download_path.mkdir(parents=True, exist_ok=True)
+            dt_str = self.dt.replace('-', '').replace(':', '').replace(' ', '_')[:15]
+            filename = f"{dt_str}_{product}.png"
+            output_path = str(download_path / filename)
+        else:
+            output_path = str(Path(output_path))
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        
+        print(f"Скачивание продукта: {product} -> {output_path}")
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        
+        with open(output_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        
+        metadata_file = Path(output_path).parent / "_metadata.txt"
+        file_exists = metadata_file.exists()
+        with open(metadata_file, 'a', encoding='utf-8') as log:
+            if not file_exists:
+                log.write("dt|satellite|device|station|product|file\n")
+            log.write(f"{self.dt}|{self.satellite}|{self.device}|{self.station}|{product}|{output_path}\n")
+        
+        return output_path
+
+    def download_products(
+        self,
+        *,
+        products: List[str],
+        download_subdir: str,
+        max_size: Optional[int] = None
+    ) -> List[str]:
+        """
+        Скачивает PNG для указанных продуктов.
+        
+        Args:
+            products: список имён продуктов
+            download_subdir: поддиректория внутри data/download/ (обязательный)
+            max_size: максимальный размер по длинной стороне (пикселей)
+        """
+        downloaded = []
+        for product in products:
+            if product not in self.products:
+                warnings.warn(f"Product '{product}' not found in scene, skipping", UserWarning)
+                continue
+            path = self.download_product(product=product, download_subdir=download_subdir, max_size=max_size)
+            downloaded.append(path)
+        return downloaded
+
+    def download_all_products(
+        self,
+        *,
+        download_subdir: str,
+        max_size: Optional[int] = None
+    ) -> List[str]:
+        """
+        Скачивает PNG для всех продуктов сцены.
+        
+        Args:
+            download_subdir: поддиректория внутри data/download/ (обязательный)
+            max_size: максимальный размер по длинной стороне (пикселей)
+        """
+        return self.download_products(products=list(self.products.keys()), download_subdir=download_subdir, max_size=max_size)
