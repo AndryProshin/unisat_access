@@ -2,6 +2,7 @@
 
 import requests
 import warnings
+import json
 from urllib.parse import urlencode
 from pathlib import Path
 from datetime import datetime
@@ -131,6 +132,25 @@ class Scene:
             "fragments": self._fragments
         }
 
+    def _save_params_json(self, target_dir: Path, operation: str, **extra_params) -> None:
+        """Сохраняет параметры запроса и операции в _params.json"""
+        params_file = target_dir / "_params.json"
+        if params_file.exists():
+            return
+        
+        params_data = {
+            "query": self._params.copy(),
+            "operation": {
+                "name": operation,
+                "timestamp": datetime.now().isoformat(),
+                "package_version": "1.0.0",
+                **extra_params
+            }
+        }
+        
+        with open(params_file, 'w', encoding='utf-8') as f:
+            json.dump(params_data, f, indent=2, ensure_ascii=False)
+
     def download(
         self,
         download_subdir: str,
@@ -145,43 +165,21 @@ class Scene:
                 если False, сохраняет оригинальную структуру product/04040/...
         
         Returns:
-            словарь с информацией о скачивании:
-            {
-                "download_dir": путь к директории,
-                "files": список скачанных файлов,
-                "params_file": путь к _params.json,
-                "metadata_file": путь к _metadata.txt
-            }
+            словарь с информацией о скачивании
         """
         fragments = self.get_fragments()
         if not fragments:
             print("Нет фрагментов для скачивания")
             return None
         
-        # Определяем директорию скачивания
         download_path = config.DOWNLOAD_DIR / download_subdir
         download_path.mkdir(parents=True, exist_ok=True)
         
-        # Формируем базовое имя для файлов
+        # Сохраняем _params.json
+        self._save_params_json(download_path, "download", flat=flat)
+        
         dt_str = self.dt.replace('-', '').replace(':', '').replace(' ', '_')[:15]
         
-        # Сохраняем параметры запроса в JSON
-        params_file = download_path / "_params.json"
-        if not params_file.exists():
-            import json
-            download_params = {
-                "query": self._params.copy(),
-                "download": {
-                    "operation": "download",
-                    "flat": flat,
-                    "timestamp": datetime.now().isoformat(),
-                    "package_version": "1.0.0"
-                }
-            }
-            with open(params_file, 'w', encoding='utf-8') as f:
-                json.dump(download_params, f, indent=2, ensure_ascii=False)
-        
-        # Лог-файл для метаданных
         metadata_file = download_path / "_metadata.txt"
         file_exists = metadata_file.exists()
         
@@ -200,16 +198,16 @@ class Scene:
                         continue
                     
                     if flat:
-                        # Извлекаем оригинальное расширение из пути
                         ext = Path(original_path).suffix
                         if not ext:
                             ext = ".tif"
                         filename = f"{dt_str}_frag{i}_{product_type}{ext}"
                         local_path = download_path / filename
+                        rel_path = filename
                     else:
-                        # Оригинальная структура
                         local_path = download_path / original_path
                         local_path.parent.mkdir(parents=True, exist_ok=True)
+                        rel_path = original_path
                     
                     print(f"Скачивание: {product_type} -> {local_path}")
                     response = requests.get(url, stream=True)
@@ -219,17 +217,16 @@ class Scene:
                         for chunk in response.iter_content(chunk_size=8192):
                             f.write(chunk)
                     
-                    log.write(f"{self.dt}|{self.satellite}|{self.device}|{self.station}|{i}|{product_type}|{original_path}|{local_path}\n")
+                    log.write(f"{self.dt}|{self.satellite}|{self.device}|{self.station}|{i}|{product_type}|{original_path}|{rel_path}\n")
                     downloaded_files.append(str(local_path))
         
         print(f"\nФайлы сохранены в: {download_path}")
         print(f"Лог: {metadata_file}")
-        print(f"Параметры: {params_file}")
         
         return {
             "download_dir": str(download_path),
             "files": downloaded_files,
-            "params_file": str(params_file),
+            "params_file": str(download_path / "_params.json"),
             "metadata_file": str(metadata_file)
         }
 
@@ -328,9 +325,15 @@ class Scene:
             dt_str = self.dt.replace('-', '').replace(':', '').replace(' ', '_')[:15]
             filename = f"{dt_str}_{product}.png"
             output_path = str(save_path / filename)
+            rel_path = filename
         else:
             output_path = str(Path(output_path))
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            rel_path = Path(output_path).name
+        
+        # Сохраняем _params.json
+        save_dir = Path(output_path).parent
+        self._save_params_json(save_dir, "get_product", product=product, max_size=max_size)
         
         print(f"Получение продукта: {product} -> {output_path}")
         response = requests.get(url, stream=True)
@@ -340,12 +343,12 @@ class Scene:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
         
-        metadata_file = Path(output_path).parent / "_metadata.txt"
+        metadata_file = save_dir / "_metadata.txt"
         file_exists = metadata_file.exists()
         with open(metadata_file, 'a', encoding='utf-8') as log:
             if not file_exists:
                 log.write("dt|satellite|device|station|product|file\n")
-            log.write(f"{self.dt}|{self.satellite}|{self.device}|{self.station}|{product}|{output_path}\n")
+            log.write(f"{self.dt}|{self.satellite}|{self.device}|{self.station}|{product}|{rel_path}\n")
         
         return output_path
 

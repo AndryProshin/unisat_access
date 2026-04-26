@@ -221,6 +221,7 @@ for scene in metadata:
         result_subdir="ryazan_processed",
         resample_to="highest",      # пересэмплировать к максимальному разрешению
         resample_method="bilinear"  # метод пересэмплинга
+        qlook=True
     )
     
     print(f"Сохранено: {result['files']}")
@@ -241,6 +242,7 @@ for scene in metadata:
 |bbox               | Optional[List[float]]      | [minx, miny, maxx, maxy] в WGS84 градусах (None → из параметров сцены)
 |resample_to        | Optional[Union[str, float]]| Пересэмплирование: None (без изменений), `highest`, `lowest`, или число в метрах  
 |resample_method    | str                        | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию `nearest`)
+|qlook               | bool                       | Если True, создать обзорное изображение (PNG) рядом с GeoTIFF |
 
 ### Mask
 
@@ -272,6 +274,9 @@ from processing.indices import compute_ndvi, compute_evi, Sentinel2Indices, Spec
 
 # Быстрый NDVI
 result = compute_ndvi(scene, "ndvi_results")
+
+# NDVI с обзорным изображением
+result = compute_ndvi(scene, "ndvi_results", qlook=True)
 
 # Пользовательский индекс
 my_index = SpectralIndex(
@@ -310,20 +315,4 @@ result = compute_ndvi(scene, "ndvi_clean", mask=mask)
 * Пути к данным вычисляются относительно корня проекта
 * Маски универсальны и могут быть созданы из любого источника (файл, массив, SCL)
 
-### Структура директорий для данных
 
-Все данные сохраняются в data/:
-
-```text
-data/
-├── download/          # Сырые фрагменты (scene.download)
-│   └── my_download/
-└── processed/         # Обработанные данные (GDALScene)
-    └── ryazan_processed/
-        ├── _params.json
-        ├── _metadata.txt
-        └── *.tif
-└── products/          # Полученные продукты (scene.get_*_products)
-    └── products_all/
-        └── *.png        
-```

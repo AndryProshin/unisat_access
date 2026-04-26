@@ -353,3 +353,71 @@ def get_raster_statistics(array: np.ndarray, no_data: Optional[float] = None) ->
         'mean': float(np.mean(valid)),
         'std': float(np.std(valid))
     }
+
+def array_to_png(
+    array: np.ndarray,
+    output_path: str,
+    normalize: bool = True,
+    min_percentile: float = 2,
+    max_percentile: float = 98,
+    no_data: Optional[float] = None
+) -> str:
+    """
+    Преобразует 2D массив в PNG изображение.
+    
+    Параметры
+    ---------
+    array : np.ndarray
+        Входной массив
+    output_path : str
+        Путь для сохранения PNG
+    normalize : bool
+        Если True, применяет процентильную нормализацию
+    min_percentile : float
+        Нижний процентиль для обрезки
+    max_percentile : float
+        Верхний процентиль для обрезки
+    no_data : float, optional
+        Значение NoData для исключения из статистики (и замены на 0)
+    
+    Возвращает
+    ----------
+    str
+        Путь к сохранённому PNG
+    """
+    from PIL import Image
+    
+    if normalize:
+        # Нормализуем массив в диапазон 0-255
+        # Исключаем NoData из статистики
+        if no_data is not None:
+            valid = array[array != no_data]
+        else:
+            valid = array[~np.isnan(array)]
+        
+        if len(valid) > 0:
+            vmin = np.percentile(valid, min_percentile)
+            vmax = np.percentile(valid, max_percentile)
+            
+            if vmax - vmin < 1e-6:
+                png_array = np.zeros_like(array, dtype=np.uint8)
+            else:
+                png_array = np.clip(array, vmin, vmax)
+                png_array = (png_array - vmin) / (vmax - vmin)
+                png_array = (png_array * 255).astype(np.uint8)
+        else:
+            png_array = np.zeros_like(array, dtype=np.uint8)
+    else:
+        # Без нормализации — предполагаем, что массив уже в 0-255
+        png_array = np.clip(array, 0, 255).astype(np.uint8)
+    
+    # Заменяем NoData на 0 (чёрный)
+    if no_data is not None:
+        png_array[array == no_data] = 0
+    else:
+        png_array[np.isnan(array)] = 0
+    
+    img = Image.fromarray(png_array, mode='L')
+    img.save(output_path)
+    
+    return output_path

@@ -5,7 +5,7 @@
 import numpy as np
 from typing import Optional, List
 from osgeo import gdal
-
+from pathlib import Path
 
 class Mask:
     """
@@ -89,17 +89,7 @@ class Mask:
         out_ds = None
         
         return output_path
-    
-    def save(self, path: str) -> None:
-        """Сохранить маску как GeoTIFF"""
-        driver = gdal.GetDriverByName('GTiff')
-        ds = driver.Create(
-            path, self.data.shape[1], self.data.shape[0],
-            1, gdal.GDT_Float32
-        )
-        ds.GetRasterBand(1).WriteArray(self.data)
-        ds = None
-    
+  
     def __and__(self, other: "Mask") -> "Mask":
         """Логическое И двух масок"""
         return Mask(np.minimum(self.data, other.data))
@@ -111,3 +101,42 @@ class Mask:
     def __invert__(self) -> "Mask":
         """Отрицание маски"""
         return Mask(1 - self.data)
+
+    def save(self, path: str, save_png: bool = False) -> Optional[str]:
+        """
+        Сохранить маску как GeoTIFF (и опционально PNG).
+        
+        Параметры
+        ---------
+        path : str
+            Путь для сохранения GeoTIFF
+        save_png : bool
+            Если True, создать PNG версию (0→чёрный, 1→белый)
+        
+        Возвращает
+        ----------
+        Optional[str]
+            Путь к PNG файлу (если save_png=True), иначе None
+        """
+        from ..gdal.utils import array_to_png
+        
+        # Сохраняем GeoTIFF
+        driver = gdal.GetDriverByName('GTiff')
+        ds = driver.Create(
+            path, self.data.shape[1], self.data.shape[0],
+            1, gdal.GDT_Float32
+        )
+        ds.GetRasterBand(1).WriteArray(self.data)
+        ds = None
+        
+        # Сохраняем PNG (опционально)
+        png_path = None
+        if save_png:
+            png_path = str(Path(path).with_suffix('.png'))
+            # Для маски: 0 → чёрный, 1 → белый, без нормализации
+            png_array = (self.data * 255).astype(np.uint8)
+            from PIL import Image
+            img = Image.fromarray(png_array, mode='L')
+            img.save(png_path)
+        
+        return png_path

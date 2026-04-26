@@ -10,8 +10,8 @@
     # Быстрый NDVI
     result = compute_ndvi(scene, "my_ndvi")
     
-    # Или явно через индекс
-    result = compute_index(scene, Sentinel2Indices.EVI, "my_evi")
+    # NDVI с PNG-превью
+    result = compute_ndvi(scene, "my_ndvi", save_png=True)
 """
 
 from typing import Dict, Any, Optional, List
@@ -39,7 +39,6 @@ class Sentinel2Indices:
     """
     
     # NDVI - Normalized Difference Vegetation Index
-    # Формула: (NIR - RED) / (NIR + RED)
     NDVI = SpectralIndex(
         name="NDVI",
         expression="(nir - red) / (nir + red)",
@@ -48,9 +47,7 @@ class Sentinel2Indices:
         output_range=(-10000, 10000)
     )
     
-    # NDWI - Normalized Difference Water Index (McFeeters)
-    # Формула: (GREEN - NIR) / (GREEN + NIR)
-    # Для воды: положительные значения
+    # NDWI - Normalized Difference Water Index
     NDWI = SpectralIndex(
         name="NDWI",
         expression="(green - nir) / (green + nir)",
@@ -60,8 +57,6 @@ class Sentinel2Indices:
     )
     
     # EVI - Enhanced Vegetation Index
-    # Формула: 2.5 * (NIR - RED) / (NIR + 6*RED - 7.5*BLUE + 1)
-    # Уменьшает влияние атмосферы и фона почвы
     EVI = SpectralIndex(
         name="EVI",
         expression="2.5 * (nir - red) / (nir + 6*red - 7.5*blue + 1)",
@@ -75,8 +70,6 @@ class Sentinel2Indices:
     )
     
     # SAVI - Soil Adjusted Vegetation Index
-    # Формула: ((NIR - RED) / (NIR + RED + L)) * (1 + L)
-    # L = 0.5 (для умеренной растительности)
     SAVI = SpectralIndex(
         name="SAVI",
         expression="((nir - red) / (nir + red + 0.5)) * 1.5",
@@ -86,8 +79,6 @@ class Sentinel2Indices:
     )
     
     # NDMI - Normalized Difference Moisture Index
-    # Формула: (NIR - SWIR1) / (NIR + SWIR1)
-    # Чувствителен к влажности растительности
     NDMI = SpectralIndex(
         name="NDMI",
         expression="(nir - swir1) / (nir + swir1)",
@@ -97,8 +88,6 @@ class Sentinel2Indices:
     )
     
     # NBR - Normalized Burn Ratio
-    # Формула: (NIR - SWIR2) / (NIR + SWIR2)
-    # Для выявления гарей: низкие значения после пожара
     NBR = SpectralIndex(
         name="NBR",
         expression="(nir - swir2) / (nir + swir2)",
@@ -118,7 +107,8 @@ def compute_ndvi(
     mask: Optional[np.ndarray] = None,
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
-    scale: float = 10000
+    scale: float = 10000,
+    save_png: bool = False
 ) -> Dict[str, Any]:
     """
     Быстрое вычисление NDVI для Sentinel-2.
@@ -137,17 +127,13 @@ def compute_ndvi(
         Сдвиг для DN→Reflectance (по умолчанию -1000)
     scale : float
         Масштаб для DN→Reflectance (по умолчанию 10000)
+    save_png : bool, default=False
+        Если True, создать PNG-превью результата
     
     Возвращает
     ----------
     dict
-        С ключами: index, file, expression, statistics
-    
-    Пример
-    -------
-    >>> from processing.indices.sentinel2 import compute_ndvi
-    >>> result = compute_ndvi(scene, "ndvi_results")
-    >>> print(result['file'])
+        С ключами: index, file, expression, statistics, (png_file)
     """
     return compute_index(
         scene,
@@ -156,7 +142,8 @@ def compute_ndvi(
         mask=mask,
         bbox=bbox,
         offset=offset,
-        scale=scale
+        scale=scale,
+        save_png=save_png
     )
 
 
@@ -166,14 +153,11 @@ def compute_evi(
     mask: Optional[np.ndarray] = None,
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
-    scale: float = 10000
+    scale: float = 10000,
+    save_png: bool = False
 ) -> Dict[str, Any]:
     """
     Быстрое вычисление EVI для Sentinel-2.
-    
-    Пример
-    -------
-    >>> result = compute_evi(scene, "evi_results")
     """
     return compute_index(
         scene,
@@ -182,7 +166,8 @@ def compute_evi(
         mask=mask,
         bbox=bbox,
         offset=offset,
-        scale=scale
+        scale=scale,
+        save_png=save_png
     )
 
 
@@ -192,14 +177,11 @@ def compute_ndwi(
     mask: Optional[np.ndarray] = None,
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
-    scale: float = 10000
+    scale: float = 10000,
+    save_png: bool = False
 ) -> Dict[str, Any]:
     """
     Быстрое вычисление NDWI для Sentinel-2.
-    
-    Пример
-    -------
-    >>> result = compute_ndwi(scene, "ndwi_results")
     """
     return compute_index(
         scene,
@@ -208,7 +190,8 @@ def compute_ndwi(
         mask=mask,
         bbox=bbox,
         offset=offset,
-        scale=scale
+        scale=scale,
+        save_png=save_png
     )
 
 
@@ -218,14 +201,11 @@ def compute_savi(
     mask: Optional[np.ndarray] = None,
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
-    scale: float = 10000
+    scale: float = 10000,
+    save_png: bool = False
 ) -> Dict[str, Any]:
     """
     Быстрое вычисление SAVI для Sentinel-2.
-    
-    Пример
-    -------
-    >>> result = compute_savi(scene, "savi_results")
     """
     return compute_index(
         scene,
@@ -234,7 +214,8 @@ def compute_savi(
         mask=mask,
         bbox=bbox,
         offset=offset,
-        scale=scale
+        scale=scale,
+        save_png=save_png
     )
 
 
@@ -244,14 +225,11 @@ def compute_ndmi(
     mask: Optional[np.ndarray] = None,
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
-    scale: float = 10000
+    scale: float = 10000,
+    save_png: bool = False
 ) -> Dict[str, Any]:
     """
     Быстрое вычисление NDMI для Sentinel-2.
-    
-    Пример
-    -------
-    >>> result = compute_ndmi(scene, "ndmi_results")
     """
     return compute_index(
         scene,
@@ -260,7 +238,8 @@ def compute_ndmi(
         mask=mask,
         bbox=bbox,
         offset=offset,
-        scale=scale
+        scale=scale,
+        save_png=save_png
     )
 
 
@@ -270,14 +249,11 @@ def compute_nbr(
     mask: Optional[np.ndarray] = None,
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
-    scale: float = 10000
+    scale: float = 10000,
+    save_png: bool = False
 ) -> Dict[str, Any]:
     """
     Быстрое вычисление NBR для Sentinel-2.
-    
-    Пример
-    -------
-    >>> result = compute_nbr(scene, "nbr_results")
     """
     return compute_index(
         scene,
@@ -286,5 +262,6 @@ def compute_nbr(
         mask=mask,
         bbox=bbox,
         offset=offset,
-        scale=scale
+        scale=scale,
+        save_png=save_png
     )
