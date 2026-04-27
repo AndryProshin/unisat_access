@@ -186,7 +186,7 @@ print(f"Директория: {result['download_dir']}")
 print(f"Скачано файлов: {len(result['files'])}")
 
 # Получение физических или виртуальных продуктов в виде растра PNG
-scene.get_product(product="channel8_l2a", products_subdir="products_demo", max_size=1024)
+scene.get_product(product="v_color", products_subdir="products_demo", max_size=1024)
 scene.get_products(products=["channel8_l2a", "channel4_l2a"], products_subdir="products_demo", max_size=1024)
 scene.get_all_products(products_subdir="products_demo", max_size=1024)
 ```
