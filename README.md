@@ -48,16 +48,21 @@
 ```requirements
 requests>=2.28.0
 python-dotenv>=1.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+gdal>=3.0.0
 ```
 
-**Примечание:** GDAL не требуется для работы библиотек `unisat_api` для доступа к данным в архивах `UNISAT`, но используется для работы инструментов обработки данных, реализованных на основе библиотек `processing`
 
-Установка GDAL:
+**Примечание:** Для использования базового функционала библиотек `unisat_api`достаточно `requests` и `python-dotenv`. 
+
+
+**Варианты установки GDAL**
 
 * Linux: `sudo apt install gdal-bin libgdal-dev python3-gdal`
 * Windows: `OSGeo4W`
-
-Также вы можете использовать Python из `QGIS`, если нужна встроенная поддержка `GDAL`
+* Windows: `pip install gdal --index-url https://nathanjmcdougall.github.io/geospatial-wheels-index/`
+* Windows: Использование Python из `QGIS`
 
 ### Настройка
 
