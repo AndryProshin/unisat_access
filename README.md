@@ -198,13 +198,6 @@ scene.get_all_products(products_subdir="products_demo", max_size=1024)
 
 ## Расширения для обработки данных `processing`
 
-### Требования
-
-```requirements
-numpy
-scipy
-```
-
 ### GDALScene
 
 Требует установки GDAL. Позволяет склеивать фрагменты сцены в один файл, обрезать по bbox и пересэмплировать
