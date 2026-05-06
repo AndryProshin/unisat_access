@@ -11,3 +11,4 @@ presets/user_presets/*
 # Но не игнорировать example.json
 !presets/user_presets/example.json
 .vscode/settings.json
+unisat_access.code-workspace
