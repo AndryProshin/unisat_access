@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any, Tuple
 
 from . import config
+from .exceptions import NetworkError
 
 
 class Scene:
@@ -69,9 +70,16 @@ class Scene:
         query_string = urlencode(params)
         url = f"{self._base_url}?{query_string}"
         
-        response = requests.get(url, timeout=self._timeout)
-        response.raise_for_status()
-        self._fragments = response.json()
+        try:
+            response = requests.get(url, timeout=self._timeout)
+            response.raise_for_status()
+            self._fragments = response.json()
+        except requests.exceptions.ConnectionError:
+            raise NetworkError(f"Сервер метаданных недоступен: {self._base_url}") from None
+        except requests.exceptions.Timeout:
+            raise NetworkError(f"Превышен таймаут при запросе к {self._base_url}") from None
+        except requests.exceptions.RequestException as e:
+            raise NetworkError(f"Ошибка при запросе фрагментов: {e}") from None
     
     def get_fragments(self):
         """Возвращает список фрагментов с путями к файлам (только для физических продуктов)"""
@@ -210,8 +218,16 @@ class Scene:
                         rel_path = original_path
                     
                     print(f"Скачивание: {product_type} -> {local_path}")
-                    response = requests.get(url, stream=True)
-                    response.raise_for_status()
+                    
+                    try:
+                        response = requests.get(url, stream=True, timeout=self._timeout)
+                        response.raise_for_status()
+                    except requests.exceptions.ConnectionError:
+                        raise NetworkError(f"Сервер NGINX недоступен: {config.NGINX_BASE_URL}") from None
+                    except requests.exceptions.Timeout:
+                        raise NetworkError(f"Превышен таймаут при скачивании {product_type}") from None
+                    except requests.exceptions.RequestException as e:
+                        raise NetworkError(f"Ошибка скачивания {product_type}: {e}") from None
                     
                     with open(local_path, 'wb') as f:
                         for chunk in response.iter_content(chunk_size=8192):
@@ -336,8 +352,16 @@ class Scene:
         self._save_params_json(save_dir, "get_product", product=product, max_size=max_size)
         
         print(f"Получение продукта: {product} -> {output_path}")
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
+        
+        try:
+            response = requests.get(url, stream=True, timeout=self._timeout)
+            response.raise_for_status()
+        except requests.exceptions.ConnectionError:
+            raise NetworkError(f"Сервер продуктов недоступен: {config.PRODUCT_BASE_URL}") from None
+        except requests.exceptions.Timeout:
+            raise NetworkError(f"Превышен таймаут при получении продукта {product}") from None
+        except requests.exceptions.RequestException as e:
+            raise NetworkError(f"Ошибка получения продукта {product}: {e}") from None
         
         with open(output_path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):

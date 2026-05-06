@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 
 from . import config
-from .exceptions import ParameterError
+from .exceptions import ParameterError, NetworkError
 from .utils.validators import is_bbox, is_date_or_datetime
 
 
@@ -62,10 +62,14 @@ class Parameters:
                 "valid": data.get("valid", {}),
                 "desc": data.get("desc", {})
             }
-        except requests.RequestException as e:
-            raise ParameterError(f"Failed to get parameter schema: {e}")
+        except requests.exceptions.ConnectionError:
+            raise NetworkError(f"Сервер метаданных недоступен: {config.METADATA_BASE_URL}") from None
+        except requests.exceptions.Timeout:
+            raise NetworkError(f"Превышен таймаут при запросе к {config.METADATA_BASE_URL}") from None
+        except requests.exceptions.RequestException as e:
+            raise ParameterError(f"Ошибка получения схемы параметров: {e}") from None
         except Exception as e:
-            raise ParameterError(f"Error loading schema: {e}")
+            raise ParameterError(f"Неожиданная ошибка: {e}") from None
     
     def _load_preset(self, preset_name: str, is_collection: bool) -> None:
         """Загружает пресет из соответствующей директории"""

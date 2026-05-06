@@ -1,14 +1,13 @@
 # metadata.py
 
 import requests
+from urllib.parse import urlencode
 
 from . import config
-from .exceptions import ParameterError, MetadataError
+from .exceptions import MetadataError, NetworkError
 from .parameters import Parameters
 from .scene import Scene
 
-
-from urllib.parse import urlencode
 
 class Metadata:
     def __init__(self, params: Parameters):
@@ -33,8 +32,14 @@ class Metadata:
             response = requests.get(full_url, timeout=config.METADATA_TIMEOUT)
             response.raise_for_status()
             self._raw_json = response.json()
+        except requests.exceptions.ConnectionError:
+            raise NetworkError(f"Сервер метаданных недоступен: {base_url}") from None
+        except requests.exceptions.Timeout:
+            raise NetworkError(f"Превышен таймаут при запросе к {base_url}") from None
+        except requests.exceptions.RequestException as e:
+            raise MetadataError(f"Ошибка загрузки метаданных: {e}") from None
         except Exception as e:
-            raise MetadataError(f"Failed to load metadata: {e}")
+            raise MetadataError(f"Неожиданная ошибка: {e}") from None
     
     def __len__(self) -> int:
         return len(self._raw_json["DATA"])
