@@ -230,6 +230,8 @@ for scene in metadata:
     
     print(f"Сохранено: {result['files']}")
 
+
+
 # Результат в data/processed/ryazan_processed/
 #   _params.json      - параметры запроса и обработки
 #   _metadata.txt     - лог по сценам
