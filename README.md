@@ -53,9 +53,9 @@ scipy>=1.10.0
 gdal>=3.0.0
 ```
 
-**Примечание:** Для использования библиотек `unisat_api` достаточно модулей `requests` и `python-dotenv`. 
+**Примечание:** Для использования библиотек `unisat_api` достаточно модулей `requests` и `python-dotenv`
 
-**Варианты установки GDAL**
+### Варианты установки GDAL
 
 * Linux: `sudo apt install gdal-bin libgdal-dev python3-gdal`
 * Windows: `OSGeo4W`
@@ -246,7 +246,7 @@ for scene in metadata:
 |bbox               | Optional[List[float]]      | [minx, miny, maxx, maxy] в WGS84 градусах (None → из параметров сцены)
 |resample_to        | Optional[Union[str, float]]| Пересэмплирование: None (без изменений), `highest`, `lowest`, или число в метрах  
 |resample_method    | str                        | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию `nearest`)
-|qlook               | bool                       | Если True, создать обзорное изображение (PNG) рядом с GeoTIFF
+|qlook              | bool                       | Если True, создать обзорное изображение (PNG) рядом с GeoTIFF
 
 ### Mask
 
