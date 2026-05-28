@@ -5,9 +5,10 @@ import json
 import requests
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
+from urllib.parse import urlencode
 
 from . import config
-from .exceptions import ParameterError, NetworkError
+from .exceptions import ParameterError, NetworkError, MetadataError
 from .utils.validators import is_bbox, is_date_or_datetime
 
 
@@ -296,3 +297,123 @@ class Parameters:
             result["user_presets"] = sorted([f.stem for f in config.USER_PRESETS_DIR.glob("*.json")])
         
         return result
+
+    # ============================================
+    # СПРАВОЧНАЯ ИНФОРМАЦИЯ О ПРОДУКТАХ (GetDeviceProductsInfo)
+    # ============================================
+
+    def get_products_info(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Получить справочную информацию о продуктах и каналах для всех приборов,
+        указанных в параметрах (ключ 'devices').
+        
+        Returns:
+            Словарь вида {device_name: {'bands': ..., 'products': ..., 'vproducts': ...}}
+            Всегда возвращает словарь, даже если прибор один.
+        
+        Example:
+            >>> params = Parameters(collection="sentinel2_boa")
+            >>> info = params.get_products_info()
+            >>> for device, data in info.items():
+            ...     print(f"{device}: {len(data['bands'])} bands")
+        """
+        devices = self._get_devices_from_params()
+        
+        result = {}
+        for device in devices:
+            result[device] = self._fetch_products_info(device)
+        return result
+    
+    def print_products_info(self):
+        """
+        Печатает справочную информацию о продуктах и каналах в читаемом виде.
+        Выводит данные для всех приборов, указанных в параметрах.
+        """
+        data = self.get_products_info()
+        
+        for device, device_data in data.items():
+            print(f"\n{'=' * 80}")
+            print(f"DEVICE: {device}")
+            print(f"{'=' * 80}")
+            self._print_products_info_recursive(device_data)
+    
+    def _print_products_info_recursive(self, data: Any, indent: int = 0):
+        """
+        Рекурсивно печатает структуру данных в читаемом виде.
+        Простой иерархический вывод без лишних разделителей.
+        """
+        prefix = "  " * indent
+        
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if isinstance(value, (dict, list)):
+                    print(f"{prefix}{key}:")
+                    self._print_products_info_recursive(value, indent + 1)
+                else:
+                    print(f"{prefix}{key}: {value}")
+        
+        elif isinstance(data, list):
+            for i, item in enumerate(data):
+                if isinstance(item, (dict, list)):
+                    print(f"{prefix}[{i}]:")
+                    self._print_products_info_recursive(item, indent + 1)
+                else:
+                    print(f"{prefix}[{i}]: {item}")
+        
+        else:
+            print(f"{prefix}{data}")
+    
+    def _get_devices_from_params(self) -> List[str]:
+        """Извлекает список устройств из параметров (ключ 'devices')"""
+        devices_param = self._params.get("devices")
+        if not devices_param:
+            raise ParameterError(
+                "Cannot get products info: 'devices' parameter is not set. "
+                "Please ensure your preset/collection includes 'devices'."
+            )
+        if isinstance(devices_param, list):
+            return devices_param
+        return [devices_param]
+    
+    def _fetch_products_info(self, device: str) -> Dict[str, Any]:
+        """Выполняет запрос GetDeviceProductsInfo к серверу метаданных."""
+        base_url = config.METADATA_BASE_URL.rstrip('/')
+        
+        params = {
+            "request": "GetDeviceProductsInfo",
+            "device": device
+        }
+        
+        # Опционально: фильтрация по продуктам
+        if "products" in self._params:
+            products_param = self._params["products"]
+            if isinstance(products_param, list):
+                params["products"] = ','.join(str(p) for p in products_param)
+            else:
+                params["products"] = str(products_param)
+        
+        query_string = urlencode(params)
+        full_url = f"{base_url}?{query_string}"
+        
+        try:
+            response = requests.get(full_url, timeout=config.METADATA_TIMEOUT)
+            response.raise_for_status()
+            
+            # Сервер возвращает CP1251, а requests думает, что это UTF-8
+            # Пробуем декодировать как CP1251
+            try:
+                # Декодируем тело как CP1251
+                decoded_content = response.content.decode('cp1251')
+                return json.loads(decoded_content)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                # Если не получилось, пробуем как UTF-8
+                return response.json()
+            
+        except requests.exceptions.ConnectionError:
+            raise NetworkError(f"Сервер метаданных недоступен: {base_url}") from None
+        except requests.exceptions.Timeout:
+            raise NetworkError(f"Превышен таймаут при запросе к {base_url}") from None
+        except requests.exceptions.RequestException as e:
+            raise MetadataError(f"Ошибка получения информации об устройстве {device}: {e}") from None
+        except Exception as e:
+            raise MetadataError(f"Неожиданная ошибка: {e}") from None

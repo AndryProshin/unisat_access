@@ -43,8 +43,31 @@ print("Parameters (no collection):")
 pprint(params_no_collection.to_dict())
 
 # ------------------------------------------------------------
-# 3. Дальнейшая работа с параметрами
+# 3. Получение справочной информации о продуктах (GetDeviceProductsInfo)
 # ------------------------------------------------------------
+print("\n" + "=" * 70)
+print("> Get products info (DeviceProductsInfo)")
+print("=" * 70)
+
+# Создаём объект Parameters с одним прибором и двумя продуктами (включая v_color)
+params_info = Parameters(params={
+    "dt_from": "2024-01-01 00:00:00",
+    "dt": "2024-01-02 00:00:00",
+    "bbox": [41, 41, 45, 45],
+    "devices": ["MSI_BOA"],
+    "products": ["channel3_l2a", "channel4_l2a", "v_color"]
+})
+
+print("\n--- Текстовый вывод информации об устройстве и продуктах ---")
+params_info.print_products_info()
+
+# ------------------------------------------------------------
+# 4. Дальнейшая работа с параметрами
+# ------------------------------------------------------------
+print("\n" + "=" * 70)
+print("> Further work with parameters")
+print("=" * 70)
+
 print("\n> Set parameter and print it")
 params.set("limit", 10)
 pprint(params.get("limit"))
