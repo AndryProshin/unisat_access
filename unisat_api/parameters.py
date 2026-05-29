@@ -324,10 +324,13 @@ class Parameters:
             result[device] = self._fetch_products_info(device)
         return result
     
+
     def print_products_info(self):
         """
         Печатает справочную информацию о продуктах и каналах в читаемом виде.
         Выводит данные для всех приборов, указанных в параметрах.
+        Порядок секций: PRODUCTS -> VPRODUCTS -> BANDS
+        BANDS выводится в табличном виде.
         """
         data = self.get_products_info()
         
@@ -335,33 +338,106 @@ class Parameters:
             print(f"\n{'=' * 80}")
             print(f"DEVICE: {device}")
             print(f"{'=' * 80}")
-            self._print_products_info_recursive(device_data)
-    
-    def _print_products_info_recursive(self, data: Any, indent: int = 0):
+            
+            # 1. Секция PRODUCTS (по алфавиту)
+            if "products" in device_data:
+                print("\nPRODUCTS:")
+                products = device_data["products"]
+                for product_name in sorted(products.keys()):
+                    print(f"  {product_name}:")
+                    self._print_dict_flat(products[product_name], indent=1)
+            
+            # 2. Секция VPRODUCTS (по алфавиту)
+            if "vproducts" in device_data:
+                print("\nVPRODUCTS:")
+                vproducts = device_data["vproducts"]
+                for vp_name in sorted(vproducts.keys()):
+                    print(f"  {vp_name}:")
+                    self._print_dict_flat(vproducts[vp_name], indent=1)
+            
+            # 3. Секция BANDS (табличный вывод)
+            if "bands" in device_data:
+                print("\nBANDS:")
+                bands = device_data["bands"]
+                
+                # Собираем данные для таблицы
+                table_rows = []
+                for band_name in self._sort_band_keys(bands.keys()):
+                    band = bands[band_name]
+                    wl_min = band.get("wl_min", "-")
+                    wl_max = band.get("wl_max", "-")
+                    wavelength = f"{wl_min}-{wl_max}" if wl_min != "-" and wl_max != "-" else "-"
+                    resolution = band.get("resolution", "-")
+                    band_type = band.get("type", "-")
+                    table_rows.append((band_name, wavelength, resolution, band_type))
+                
+                # Выводим таблицу
+                if table_rows:
+                    print(f"    {'ID':<10} {'Wavelength (nm)':<16} {'Res':<6} {'Type'}")
+                    print(f"    {'-' * 10} {'-' * 16} {'-' * 6} {'-' * 30}")
+                    for row in table_rows:
+                        print(f"    {row[0]:<10} {row[1]:<16} {row[2]:<6} {row[3]}")
+
+
+    def _print_dict_flat(self, data: Dict[str, Any], indent: int = 0):
         """
-        Рекурсивно печатает структуру данных в читаемом виде.
-        Простой иерархический вывод без лишних разделителей.
+        Печатает плоский словарь (без рекурсивного погружения в dict/list).
+        Ключи сортируются по алфавиту.
+        Для вложенных структур выводит их в компактном виде.
         """
-        prefix = "  " * indent
+        prefix = "   " * (indent + 1)
         
-        if isinstance(data, dict):
-            for key, value in data.items():
-                if isinstance(value, (dict, list)):
+        for key in sorted(data.keys()):
+            value = data[key]
+            
+            if isinstance(value, dict):
+                # Компактный вывод для маленького словаря
+                if len(value) <= 3:
+                    value_str = ", ".join(f"{k}={v}" for k, v in sorted(value.items()))
+                    print(f"{prefix}{key}: {{{value_str}}}")
+                else:
                     print(f"{prefix}{key}:")
-                    self._print_products_info_recursive(value, indent + 1)
+                    for sub_key, sub_value in sorted(value.items()):
+                        print(f"{prefix}  {sub_key}: {sub_value}")
+            elif isinstance(value, list):
+                # Компактный вывод для списка простых значений
+                if all(not isinstance(v, (dict, list)) for v in value):
+                    value_str = ", ".join(str(v) for v in value)
+                    print(f"{prefix}{key}: [{value_str}]")
                 else:
-                    print(f"{prefix}{key}: {value}")
+                    print(f"{prefix}{key}:")
+                    for i, item in enumerate(value):
+                        if isinstance(item, dict):
+                            print(f"{prefix}  [{i}]:")
+                            for sub_key, sub_value in sorted(item.items()):
+                                print(f"{prefix}    {sub_key}: {sub_value}")
+                        else:
+                            print(f"{prefix}  [{i}]: {item}")
+            else:
+                print(f"{prefix}{key}: {value}")
+    
+    def _sort_band_keys(self, keys: List[str]) -> List[str]:
+        """
+        Сортирует ключи BANDS в числовом порядке.
+        1, 2, 3, 3 (5m), 4, 4 (5m), 5, 6, 7, 8, 8A, 9, 10, 11, 12, scl
+        """
+        def band_sort_key(band_name: str) -> tuple:
+            import re
+            # Извлекаем основное число
+            match = re.match(r'^(\d+)', band_name)
+            if match:
+                num = int(match.group(1))
+                # Проверяем на наличие суффикса (5m)
+                if '(5m)' in band_name:
+                    return (num, 1, band_name)
+                # Особый случай для 8A (после 8)
+                if '8A' in band_name:
+                    return (num, 2, band_name)
+                return (num, 0, band_name)
+            # scl и другие нечисловые ключи отправляем в конец
+            return (999, 0, band_name)
         
-        elif isinstance(data, list):
-            for i, item in enumerate(data):
-                if isinstance(item, (dict, list)):
-                    print(f"{prefix}[{i}]:")
-                    self._print_products_info_recursive(item, indent + 1)
-                else:
-                    print(f"{prefix}[{i}]: {item}")
-        
-        else:
-            print(f"{prefix}{data}")
+        return sorted(keys, key=band_sort_key)
     
     def _get_devices_from_params(self) -> List[str]:
         """Извлекает список устройств из параметров (ключ 'devices')"""
@@ -399,15 +475,9 @@ class Parameters:
             response = requests.get(full_url, timeout=config.METADATA_TIMEOUT)
             response.raise_for_status()
             
-            # Сервер возвращает CP1251, а requests думает, что это UTF-8
-            # Пробуем декодировать как CP1251
-            try:
-                # Декодируем тело как CP1251
-                decoded_content = response.content.decode('cp1251')
-                return json.loads(decoded_content)
-            except (UnicodeDecodeError, json.JSONDecodeError):
-                # Если не получилось, пробуем как UTF-8
-                return response.json()
+            # Сервер возвращает CP1251
+            response.encoding = 'cp1251'
+            return response.json()
             
         except requests.exceptions.ConnectionError:
             raise NetworkError(f"Сервер метаданных недоступен: {base_url}") from None
