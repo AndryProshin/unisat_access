@@ -50,7 +50,7 @@ print("> Get products info (DeviceProductsInfo)")
 print("=" * 70)
 
 # Создаём объект Parameters с одним прибором и двумя продуктами (включая v_color)
-params_info = Parameters(params={
+params = Parameters(params={
     "dt_from": "2024-01-01 00:00:00",
     "dt": "2024-01-02 00:00:00",
     "bbox": [41, 41, 45, 45],
@@ -58,8 +58,8 @@ params_info = Parameters(params={
     "products": ["channel3_l2a", "channel4_l2a", "v_color"]
 })
 
-print("\n--- Текстовый вывод информации об устройстве и продуктах ---")
-params_info.print_products_info()
+print("\n--- Текстовый вывод информации о продуктах и приборах ---")
+params.print_products_info()
 
 # ------------------------------------------------------------
 # 4. Дальнейшая работа с параметрами

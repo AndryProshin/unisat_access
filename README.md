@@ -97,9 +97,12 @@ params = Parameters(collection="sentinel2_boa", params={
     "dt": "2024-01-02 00:00:00",
     "bbox": [41, 41, 45, 45],
     "limit": 100,
-    "products": ["channel8_l2a", "channel4_l2a"],
+    "products": ["channel8_l2a", "channel4_l2a", "v_color"],
     "max_cloudiness": 80
 })
+
+# Текстовый вывод информации о приборах и продуктах в заданном пресете
+params.print_products_info()
 
 # Получить параметры в виде словаря
 print(params.to_dict())
