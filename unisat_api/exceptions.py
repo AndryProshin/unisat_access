@@ -1,20 +1,40 @@
 # exceptions.py
+import sys
+
 
 class UnisatAPIError(Exception):
-    """Базовое исключение для всех ошибок библиотеки"""
+    """Base exception for all library errors."""
     pass
 
 
 class ParameterError(UnisatAPIError):
-    """Ошибка в параметрах запроса"""
+    """Invalid request parameters."""
     pass
 
 
 class MetadataError(UnisatAPIError):
-    """Ошибка при получении метаданных"""
+    """Error while fetching metadata."""
     pass
 
 
 class NetworkError(UnisatAPIError):
-    """Ошибка сети (недоступен сервер, таймаут и т.д.)"""
+    """Network error (server unavailable, timeout, etc.)."""
     pass
+
+
+class StorageError(UnisatAPIError):
+    """Storage error (S3 unavailable, missing credentials, etc.)."""
+    pass
+
+
+_previous_excepthook = sys.excepthook
+
+
+def _excepthook(exc_type, exc_value, exc_tb):
+    if issubclass(exc_type, UnisatAPIError):
+        print(f"{exc_type.__name__}: {exc_value}", file=sys.stderr)
+    else:
+        _previous_excepthook(exc_type, exc_value, exc_tb)
+
+
+sys.excepthook = _excepthook

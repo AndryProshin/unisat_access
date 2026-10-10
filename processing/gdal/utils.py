@@ -1,8 +1,8 @@
 """
-Внутренние утилиты для работы с GDAL.
-Не экспортируются наружу, используются внутри модулей extras.
+Internal GDAL utilities.
+Not exported. Used inside extras modules.
 
-Содержит только универсальные функции, не привязанные к конкретким сенсорам.
+Contains only generic functions, not tied to specific sensors.
 """
 
 import numpy as np
@@ -14,7 +14,7 @@ gdal.UseExceptions()
 
 
 # ============================================
-# ЧТЕНИЕ РАСТРОВ
+# READING RASTERS
 # ============================================
 
 def read_raster(
@@ -24,26 +24,26 @@ def read_raster(
     out_size: Optional[Tuple[int, int]] = None
 ) -> Dict[str, Any]:
     """
-    Чтение GeoTIFF файла.
-    
-    Параметры
-    ---------
-    path : str
-        Путь к файлу
-    band : int
-        Номер канала (по умолчанию 1)
-    bbox : List[float], optional
-        BBOX в проекции файла [minx, miny, maxx, maxy]
-    out_size : Tuple[int, int], optional
-        Целевой размер (ширина, высота) для ресемплинга
-    
-    Возвращает
+    Read a GeoTIFF file.
+
+    Parameters
     ----------
+    path : str
+        File path
+    band : int
+        Band number (default 1)
+    bbox : List[float], optional
+        BBOX in file projection [minx, miny, maxx, maxy]
+    out_size : Tuple[int, int], optional
+        Target size (width, height) for resampling
+
+    Returns
+    -------
     dict
-        С ключами: array, transform, proj, width, height, bands
+        With keys: array, transform, proj, width, height, bands
     """
     ds = gdal.Open(path)
-    
+
     if bbox or out_size:
         options = {}
         if bbox:
@@ -51,19 +51,19 @@ def read_raster(
         if out_size:
             options['width'] = out_size[0]
             options['height'] = out_size[1]
-        
+
         temp_ds = gdal.Warp('', ds, format='MEM', **options)
         ds = temp_ds
-    
+
     array = ds.GetRasterBand(band).ReadAsArray().astype(np.float32)
     transform = ds.GetGeoTransform()
     proj = ds.GetProjection()
     width = ds.RasterXSize
     height = ds.RasterYSize
     bands = ds.RasterCount
-    
+
     ds = None
-    
+
     return {
         'array': array,
         'transform': transform,
@@ -76,12 +76,12 @@ def read_raster(
 
 def read_raster_info(path: str) -> Dict[str, Any]:
     """
-    Получить метаинформацию о растре без чтения данных.
-    
-    Возвращает
-    ----------
+    Get raster metadata without reading data.
+
+    Returns
+    -------
     dict
-        С ключами: width, height, bands, transform, proj, dtype
+        With keys: width, height, bands, transform, proj, dtype
     """
     ds = gdal.Open(path)
     info = {
@@ -97,7 +97,7 @@ def read_raster_info(path: str) -> Dict[str, Any]:
 
 
 # ============================================
-# ЗАПИСЬ РАСТРОВ
+# WRITING RASTERS
 # ============================================
 
 def write_geotiff(
@@ -110,28 +110,28 @@ def write_geotiff(
     band: int = 1
 ) -> None:
     """
-    Сохранение массива в GeoTIFF.
-    
-    Параметры
-    ---------
+    Save array to GeoTIFF.
+
+    Parameters
+    ----------
     path : str
-        Путь для сохранения
+        Output path
     array : np.ndarray
-        2D массив
+        2D array
     transform : tuple
-        GeoTransform (6 элементов)
+        GeoTransform (6 elements)
     proj : str
-        Проекция в формате WKT
+        Projection in WKT
     no_data : float, optional
-        Значение NoData
+        NoData value
     options : List[str], optional
-        Опции GDAL (по умолчанию COMPRESS=LZW, TILED=YES)
+        GDAL options (default COMPRESS=LZW, TILED=YES)
     band : int
-        Номер канала (по умолчанию 1)
+        Band number (default 1)
     """
     if options is None:
         options = ['COMPRESS=LZW', 'TILED=YES', 'BLOCKXSIZE=512', 'BLOCKYSIZE=512']
-    
+
     driver = gdal.GetDriverByName('GTiff')
     ds = driver.Create(
         str(path),
@@ -141,17 +141,16 @@ def write_geotiff(
         gdal.GDT_Float32,
         options=options
     )
-    
+
     ds.SetGeoTransform(transform)
     ds.SetProjection(proj)
-    
+
     out_band = ds.GetRasterBand(band)
     out_band.WriteArray(array)
-    
+
     if no_data is not None:
         out_band.SetNoDataValue(no_data)
-    
-    # Сохраняем статистику (если массив не содержит NaN)
+
     if not np.any(np.isnan(array)):
         out_band.SetStatistics(
             float(np.min(array)),
@@ -159,7 +158,7 @@ def write_geotiff(
             float(np.mean(array)),
             float(np.std(array))
         )
-    
+
     ds = None
 
 
@@ -172,26 +171,26 @@ def write_multiband_geotiff(
     options: Optional[List[str]] = None
 ) -> None:
     """
-    Сохранение многоканального GeoTIFF.
-    
-    Параметры
-    ---------
+    Save multi-band GeoTIFF.
+
+    Parameters
+    ----------
     path : str
-        Путь для сохранения
+        Output path
     arrays : List[np.ndarray]
-        Список 2D массивов (каждый = один канал)
+        List of 2D arrays (one per band)
     transform : tuple
-        GeoTransform (6 элементов)
+        GeoTransform (6 elements)
     proj : str
-        Проекция в формате WKT
+        Projection in WKT
     no_data : float, optional
-        Значение NoData
+        NoData value
     options : List[str], optional
-        Опции GDAL (по умолчанию COMPRESS=LZW, INTERLEAVE=PIXEL)
+        GDAL options (default COMPRESS=LZW, INTERLEAVE=PIXEL)
     """
     if options is None:
         options = ['COMPRESS=LZW', 'TILED=YES', 'INTERLEAVE=PIXEL']
-    
+
     driver = gdal.GetDriverByName('GTiff')
     ds = driver.Create(
         str(path),
@@ -201,21 +200,21 @@ def write_multiband_geotiff(
         gdal.GDT_Float32,
         options=options
     )
-    
+
     ds.SetGeoTransform(transform)
     ds.SetProjection(proj)
-    
+
     for i, array in enumerate(arrays, start=1):
         band = ds.GetRasterBand(i)
         band.WriteArray(array)
         if no_data is not None:
             band.SetNoDataValue(no_data)
-    
+
     ds = None
 
 
 # ============================================
-# УНИВЕРСАЛЬНЫЕ ПРЕОБРАЗОВАНИЯ
+# GENERIC TRANSFORMS
 # ============================================
 
 def normalize_percentile(
@@ -226,76 +225,74 @@ def normalize_percentile(
     no_data_value: Optional[float] = 0
 ) -> np.ndarray:
     """
-    Нормализация массива с обрезкой по процентилям.
-    
-    Параметры
-    ---------
-    array : np.ndarray
-        Исходный массив
-    min_percentile : float
-        Нижний процентиль для обрезки
-    max_percentile : float
-        Верхний процентиль для обрезки
-    output_range : tuple
-        Выходной диапазон (min, max)
-    no_data_value : float, optional
-        Значение NoData для исключения из статистики
-    
-    Возвращает
+    Normalize array with percentile clipping.
+
+    Parameters
     ----------
+    array : np.ndarray
+        Input array
+    min_percentile : float
+        Lower percentile for clipping
+    max_percentile : float
+        Upper percentile for clipping
+    output_range : tuple
+        Output range (min, max)
+    no_data_value : float, optional
+        NoData value to exclude from statistics
+
+    Returns
+    -------
     np.ndarray
-        Нормализованный массив (uint8)
+        Normalized array (uint8)
     """
-    # Исключаем NoData из статистики
     if no_data_value is not None:
         valid = array[array != no_data_value]
     else:
         valid = array[~np.isnan(array)]
-    
+
     if len(valid) == 0:
         return np.zeros_like(array, dtype=np.uint8)
-    
+
     vmin = np.percentile(valid, min_percentile)
     vmax = np.percentile(valid, max_percentile)
-    
+
     if vmax - vmin < 1e-6:
         return np.zeros_like(array, dtype=np.uint8)
-    
+
     result = np.clip(array, vmin, vmax)
     result = (result - vmin) / (vmax - vmin)
     result = result * (output_range[1] - output_range[0]) + output_range[0]
-    
-    # NoData зануляем
+
     if no_data_value is not None:
         result[array == no_data_value] = 0
     else:
         result[np.isnan(array)] = 0
-    
+
     return result.astype(np.uint8)
 
 
 def get_utm_zone_from_bbox(bbox_wgs84: List[float]) -> Tuple[int, str]:
     """
-    Определить UTM зону по BBOX в WGS84.
-    
-    Формула: zone = floor((longitude + 180) / 6) + 1
-    
-    Параметры
-    ---------
-    bbox_wgs84 : List[float]
-        [minx, miny, maxx, maxy] в WGS84
-    
-    Возвращает
+    Determine UTM zone from BBOX in WGS84.
+
+    Formula: zone = floor((longitude + 180) / 6) + 1
+
+    Parameters
     ----------
+    bbox_wgs84 : List[float]
+        [minx, miny, maxx, maxy] in WGS84
+
+    Returns
+    -------
     tuple
-        (zone, hemisphere) где hemisphere = 'N' или 'S'
+        (zone, hemisphere) where hemisphere = 'N' or 'S'
     """
     center_lon = (bbox_wgs84[0] + bbox_wgs84[2]) / 2
     zone = int(np.floor((center_lon + 180) / 6)) + 1
-    
+
     center_lat = (bbox_wgs84[1] + bbox_wgs84[3]) / 2
     hemisphere = 'N' if center_lat >= 0 else 'S'
-    
+
     return zone, hemisphere
 
 
@@ -304,19 +301,19 @@ def create_vrt_from_paths(
     vrt_path: str = '/vsimem/temp.vrt'
 ) -> str:
     """
-    Создать VRT из списка путей к файлам.
-    
-    Параметры
-    ---------
-    paths : List[str]
-        Список путей (HTTP или локальных)
-    vrt_path : str
-        Путь для VRT (в памяти по умолчанию)
-    
-    Возвращает
+    Create VRT from a list of file paths.
+
+    Parameters
     ----------
+    paths : List[str]
+        List of paths (HTTP or local)
+    vrt_path : str
+        VRT path (in-memory by default)
+
+    Returns
+    -------
     str
-        Путь к созданному VRT
+        Path to created VRT
     """
     gdal.BuildVRT(vrt_path, paths)
     return vrt_path
@@ -324,35 +321,35 @@ def create_vrt_from_paths(
 
 def get_raster_statistics(array: np.ndarray, no_data: Optional[float] = None) -> Dict[str, float]:
     """
-    Вычислить статистику для массива.
-    
-    Параметры
-    ---------
-    array : np.ndarray
-        Входной массив
-    no_data : float, optional
-        Значение NoData для исключения
-    
-    Возвращает
+    Compute statistics for an array.
+
+    Parameters
     ----------
+    array : np.ndarray
+        Input array
+    no_data : float, optional
+        NoData value to exclude
+
+    Returns
+    -------
     dict
-        С ключами: min, max, mean, std
+        With keys: min, max, mean, std
     """
-    # Исключаем NoData или NaN из статистики
     if no_data is not None:
         valid = array[array != no_data]
     else:
         valid = array[~np.isnan(array)]
-    
+
     if len(valid) == 0:
         return {'min': np.nan, 'max': np.nan, 'mean': np.nan, 'std': np.nan}
-    
+
     return {
         'min': float(np.min(valid)),
         'max': float(np.max(valid)),
         'mean': float(np.mean(valid)),
         'std': float(np.std(valid))
     }
+
 
 def array_to_png(
     array: np.ndarray,
@@ -363,42 +360,40 @@ def array_to_png(
     no_data: Optional[float] = None
 ) -> str:
     """
-    Преобразует 2D массив в PNG изображение.
-    
-    Параметры
-    ---------
-    array : np.ndarray
-        Входной массив
-    output_path : str
-        Путь для сохранения PNG
-    normalize : bool
-        Если True, применяет процентильную нормализацию
-    min_percentile : float
-        Нижний процентиль для обрезки
-    max_percentile : float
-        Верхний процентиль для обрезки
-    no_data : float, optional
-        Значение NoData для исключения из статистики (и замены на 0)
-    
-    Возвращает
+    Convert a 2D array to a PNG image.
+
+    Parameters
     ----------
+    array : np.ndarray
+        Input array
+    output_path : str
+        Output PNG path
+    normalize : bool
+        If True, apply percentile normalization
+    min_percentile : float
+        Lower percentile for clipping
+    max_percentile : float
+        Upper percentile for clipping
+    no_data : float, optional
+        NoData value to exclude from statistics (and replace with 0)
+
+    Returns
+    -------
     str
-        Путь к сохранённому PNG
+        Path to saved PNG
     """
     from PIL import Image
-    
+
     if normalize:
-        # Нормализуем массив в диапазон 0-255
-        # Исключаем NoData из статистики
         if no_data is not None:
             valid = array[array != no_data]
         else:
             valid = array[~np.isnan(array)]
-        
+
         if len(valid) > 0:
             vmin = np.percentile(valid, min_percentile)
             vmax = np.percentile(valid, max_percentile)
-            
+
             if vmax - vmin < 1e-6:
                 png_array = np.zeros_like(array, dtype=np.uint8)
             else:
@@ -408,16 +403,14 @@ def array_to_png(
         else:
             png_array = np.zeros_like(array, dtype=np.uint8)
     else:
-        # Без нормализации — предполагаем, что массив уже в 0-255
         png_array = np.clip(array, 0, 255).astype(np.uint8)
-    
-    # Заменяем NoData на 0 (чёрный)
+
     if no_data is not None:
         png_array[array == no_data] = 0
     else:
         png_array[np.isnan(array)] = 0
-    
+
     img = Image.fromarray(png_array, mode='L')
     img.save(output_path)
-    
+
     return output_path

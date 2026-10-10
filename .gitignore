@@ -6,9 +6,15 @@ download_flat/
 .env
 test_temp/
 
-# Игнорировать все файлы в presets/users/
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Ignore all files in presets/users/
 presets/user_presets/*
-# Но не игнорировать example.json
+# But keep example.json
 !presets/user_presets/example.json
+
 .vscode/settings.json
 unisat_access.code-workspace

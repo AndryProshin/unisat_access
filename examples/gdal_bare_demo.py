@@ -1,13 +1,13 @@
 """
-Минимальный пример работы с архивом через GDAL без использования processing.
+Minimal example of working with the archive via GDAL without processing.
 
-Показывает, как вручную:
-- Найти сцену через Parameters + Metadata
-- Получить фрагменты
-- Открыть файлы напрямую через GDAL по HTTP
-- Прочитать данные
+Shows how to manually:
+- Find a scene via Parameters + Metadata
+- Get fragments
+- Open files directly via GDAL over HTTP
+- Read data
 
-Этот пример не требует установки processing и показывает низкоуровневую работу.
+Does not require processing. Demonstrates low-level access.
 """
 
 import sys
@@ -23,76 +23,72 @@ gdal.UseExceptions()
 
 def main():
     print("=" * 60)
-    print("GDAL BARE DEMO — работа без processing")
+    print("GDAL BARE DEMO — no processing")
     print("=" * 60)
 
-    # 1. Параметры запроса
+    # 1. Query parameters
     params = Parameters(collection="sentinel2_boa", params={
-        "dt_from": "2024-08-10 08:35:14",      # начало
-        "dt": "2024-08-10 08:35:14",           # конец (та же дата)
+        "dt_from": "2024-08-10 08:35:14",
+        "dt": "2024-08-10 08:35:14",
         "bbox": [39.5, 54.5, 40.0, 54.8],
         "products": ["channel8_l2a", "channel4_l2a"],
         "max_cloudiness": 50
     })
 
-    # 2. Загрузка метаданных
-    print("\n1. Поиск сцены...")
+    # 2. Load metadata
+    print("\n1. Searching for scene...")
     metadata = Metadata(params)
-    print(f"   Найдено сцен: {len(metadata)}")
+    print(f"   Scenes found: {len(metadata)}")
 
     if len(metadata) == 0:
-        print("   Нет сцен для обработки")
+        print("   No scenes to process")
         return
 
     scene = metadata[0]
-    print(f"   Сцена: {scene.dt} | {scene.satellite} | {scene.device}")
+    print(f"   Scene: {scene.dt} | {scene.satellite} | {scene.device}")
 
-    # 3. Получение фрагментов
-    print("\n2. Получение фрагментов...")
+    # 3. Get fragments
+    print("\n2. Getting fragments...")
     fragments = scene.get_fragments()
-    print(f"   Фрагментов: {len(fragments)}")
+    print(f"   Fragments: {len(fragments)}")
 
     if not fragments:
-        print("   Нет фрагментов")
+        print("   No fragments")
         return
 
-    # 4. Прямая работа с GDAL
-    print("\n3. Открытие файлов через GDAL по HTTP...")
+    # 4. Direct GDAL work
+    print("\n3. Opening files via GDAL over HTTP...")
 
     for i, frag in enumerate(fragments):
-        print(f"\n   Фрагмент {i}:")
+        print(f"\n   Fragment {i}:")
         http_frag = scene.to_http(frag)
 
         for product_name, url in http_frag.items():
             print(f"     {product_name}: {url[:80]}...")
 
-            # Открываем через GDAL
             ds = gdal.Open(url)
             if ds is None:
-                print(f"       Ошибка: не удалось открыть")
+                print(f"       Error: cannot open")
                 continue
 
-            # Читаем метаданные
             band = ds.GetRasterBand(1)
             cols = ds.RasterXSize
             rows = ds.RasterYSize
             dtype = gdal.GetDataTypeName(band.DataType)
 
-            # Читаем статистику (без загрузки всего массива)
             stats = band.GetStatistics(True, True)
 
-            print(f"       Размер: {cols} x {rows}, тип: {dtype}")
-            print(f"       Статистика: min={stats[0]:.0f}, max={stats[1]:.0f}, mean={stats[2]:.0f}")
+            print(f"       Size: {cols} x {rows}, type: {dtype}")
+            print(f"       Stats: min={stats[0]:.0f}, max={stats[1]:.0f}, mean={stats[2]:.0f}")
 
-            # Опционально: читаем небольшой кусочек
             if cols > 100 and rows > 100:
                 small = band.ReadAsArray(0, 0, 100, 100)
-                print(f"       Прочитано 100x100 пикселей, форма: {small.shape}")
+                print(f"       Read 100x100 pixels, shape: {small.shape}")
 
             ds = None
 
     print("\n" + "=" * 60)
-    print("Готово! Данные доступны для кастомной обработки.")
+    print("Done! Data available for custom processing.")
     print("=" * 60)
 
 

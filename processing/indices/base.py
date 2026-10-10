@@ -1,15 +1,16 @@
+# processing/indices/base.py
 """
-Спектральные индексы для спутниковых данных.
+Spectral indices for satellite data.
 
-Универсальный инструмент для вычисления любых спектральных индексов.
-Не содержит сенсор-специфичных предустановок.
+Generic tool for computing spectral indices.
+Contains no sensor-specific presets.
 
-Позволяет:
-- Создавать пользовательские индексы через формулу
-- Вычислять предустановленные индексы (сенсор-специфичные - в других модулях)
-- Работать с масками облачности
-- Сохранять результаты в GeoTIFF
-- Опционально сохранять PNG-превью
+Features:
+- User-defined indices via expression
+- Preset indices (sensor-specific - in other modules)
+- Cloud mask support
+- Save results to GeoTIFF
+- Optional PNG preview
 """
 
 import json
@@ -26,39 +27,30 @@ from processing.gdal.scene import GDALScene
 
 
 # ============================================
-# КЛАСС: СПЕКТРАЛЬНЫЙ ИНДЕКС
+# SPECTRAL INDEX
 # ============================================
 
 class SpectralIndex:
     """
-    Определение спектрального индекса.
-    
-    Параметры
-    ---------
+    Spectral index definition.
+
+    Parameters
+    ----------
     name : str
-        Название индекса (например, "NDVI")
+        Index name (e.g. "NDVI")
     expression : str
-        Формула вычисления с использованием имён из bands.
-        Доступны: np, sqrt, log, log10, exp, abs, where, min, max
+        Formula using names from bands.
+        Available: np, sqrt, log, log10, exp, abs, where, min, max
     bands : Dict[str, str]
-        Маппинг имён в формуле -> имена продуктов в сцене
+        Mapping of names in expression -> product names in scene
     scale : float, default=1
-        Множитель результата (например, 10000 для int16)
+        Result multiplier (e.g. 10000 for int16)
     output_range : tuple, optional
-        Клиппинг результата (min, max)
+        Result clipping (min, max)
     no_data : float, default=np.nan
-        Значение для NoData пикселей
-    
-    Пример
-    -------
-    >>> ndvi = SpectralIndex(
-    ...     name="NDVI",
-    ...     expression="(nir - red) / (nir + red)",
-    ...     bands={"nir": "channel8_l2a", "red": "channel4_l2a"},
-    ...     scale=10000
-    ... )
+        NoData value
     """
-    
+
     def __init__(
         self,
         name: str,
@@ -74,20 +66,20 @@ class SpectralIndex:
         self.scale = scale
         self.output_range = output_range
         self.no_data = no_data
-    
+
     def evaluate(self, band_data: Dict[str, np.ndarray]) -> np.ndarray:
         """
-        Вычислить индекс по формуле.
-        
-        Параметры
-        ---------
-        band_data : Dict[str, np.ndarray]
-            Словарь с массивами для каждого имени из bands
-        
-        Возвращает
+        Evaluate the index expression.
+
+        Parameters
         ----------
+        band_data : Dict[str, np.ndarray]
+            Arrays for each name in bands
+
+        Returns
+        -------
         np.ndarray
-            Результат вычисления
+            Result array
         """
         namespace = band_data.copy()
         namespace.update({
@@ -101,37 +93,37 @@ class SpectralIndex:
             'min': np.minimum,
             'max': np.maximum
         })
-        
+
         result = eval(self.expression, {"__builtins__": {}}, namespace)
         result = result * self.scale
-        
+
         if self.output_range:
             result = np.clip(result, self.output_range[0], self.output_range[1])
-        
+
         return result.astype(np.float32)
-    
+
     def __repr__(self) -> str:
         return f"SpectralIndex('{self.name}', expression='{self.expression}')"
 
 
 # ============================================
-# КЛАСС: КАЛЬКУЛЯТОР ИНДЕКСОВ
+# INDEX CALCULATOR
 # ============================================
 
 class IndexCalculator:
     """
-    Калькулятор спектральных индексов для сцены.
-    
-    Параметры
-    ---------
+    Spectral index calculator for a scene.
+
+    Parameters
+    ----------
     scene : Scene
-        Объект сцены
+        Scene object
     offset : float, default=-1000
-        Сдвиг для преобразования DN -> Reflectance (для Sentinel-2)
+        Offset for DN -> Reflectance (Sentinel-2)
     scale : float, default=10000
-        Масштаб для преобразования DN -> Reflectance (для Sentinel-2)
+        Scale for DN -> Reflectance (Sentinel-2)
     """
-    
+
     def __init__(
         self,
         scene: Scene,
@@ -141,7 +133,7 @@ class IndexCalculator:
         self.scene = scene
         self.offset = offset
         self.scale = scale
-    
+
     def _save_params_json(
         self,
         output_path: Path,
@@ -151,9 +143,9 @@ class IndexCalculator:
         resample_to: Optional[str],
         resample_method: str
     ) -> None:
-        """Сохраняет _params.json с параметрами запроса и операции"""
+        """Save _params.json with query and operation parameters."""
         params_file = output_path / "_params.json"
-        
+
         params_data = {
             "query": self.scene._params.copy(),
             "operation": {
@@ -168,15 +160,15 @@ class IndexCalculator:
                 "bbox_used": bbox or self.scene._params.get("bbox")
             }
         }
-        
+
         with open(params_file, 'w', encoding='utf-8') as f:
             json.dump(params_data, f, indent=2, ensure_ascii=False)
-        print(f"   Сохранён _params.json в {output_path}")
+        print(f"   Saved _params.json to {output_path}")
 
     def _save_metadata(self, output_path: Path, filename: str) -> None:
-        """Сохраняет _metadata.txt в финальной директории"""
+        """Save _metadata.txt in the final directory."""
         metadata_file = output_path / "_metadata.txt"
-        
+
         with open(metadata_file, 'w', encoding='utf-8', newline='') as f:
             writer = csv.writer(f, delimiter='|')
             writer.writerow(["dt", "satellite", "device", "station", "index", "file"])
@@ -188,73 +180,76 @@ class IndexCalculator:
                 "index_result",
                 filename
             ])
-        print(f"   Сохранён _metadata.txt в {output_path}")
+        print(f"   Saved _metadata.txt to {output_path}")
 
     def compute(
         self,
         index: SpectralIndex,
-        result_subdir: str,
+        data_subdir: str,
         mask: Optional[np.ndarray] = None,
         bbox: Optional[List[float]] = None,
         resample_to: Optional[str] = "highest",
         resample_method: str = "bilinear",
-        save_png: bool = False
+        save_png: bool = False,
+        keep_tmp: bool = False
     ) -> Dict[str, Any]:
         """
-        Вычислить индекс и сохранить как GeoTIFF.
-        
-        Параметры
-        ---------
+        Compute index and save as GeoTIFF.
+
+        Parameters
+        ----------
         index : SpectralIndex
-            Индекс для вычисления
-        result_subdir : str
-            Поддиректория внутри data/processed/
+            Index to compute
+        data_subdir : str
+            Subdirectory inside data/
         mask : np.ndarray, optional
-            Маска (1 = хороший пиксель, 0 = исключить)
+            Mask (1 = good pixel, 0 = exclude)
         bbox : List[float], optional
-            BBOX в WGS84 [minx, miny, maxx, maxy]
+            BBOX in WGS84 [minx, miny, maxx, maxy]
         resample_to : str, optional
-            "highest", "lowest" или None
+            "highest", "lowest" or None
         resample_method : str
             "nearest", "bilinear", "cubic"
         save_png : bool, default=False
-            Если True, создать PNG-превью результата
-        
-        Возвращает
-        ----------
+            If True, create PNG preview of the result
+        keep_tmp : bool, default=False
+            If True, keep temporary files after success
+
+        Returns
+        -------
         dict
-            С ключами: index, file, expression, statistics, (png_file)
+            With keys: index, file, expression, statistics, (png_file)
         """
-        output_path = config.PROCESSED_DIR / result_subdir
+        output_path = config.DATA_DIR / data_subdir
         output_path.mkdir(parents=True, exist_ok=True)
-        
-        # 1. Загружаем каналы
+
+        # 1. Load bands
         band_data, transform, proj = self._load_bands(
-            index.bands, bbox, resample_to, resample_method
+            index.bands, bbox, resample_to, resample_method, data_subdir
         )
-        
-        # 2. Вычисляем индекс
+
+        # 2. Compute index
         result_array = index.evaluate(band_data)
-        
-        # 3. Применяем маску
+
+        # 3. Apply mask
         if mask is not None:
             if mask.shape != result_array.shape:
                 from scipy.ndimage import zoom
                 scale_y = result_array.shape[0] / mask.shape[0]
                 scale_x = result_array.shape[1] / mask.shape[1]
                 mask = zoom(mask, (scale_y, scale_x), order=0)
-            
+
             result_array = result_array * mask
             result_array[mask == 0] = -9999
-        
-        # 4. Заменяем NaN на NoData
+
+        # 4. Replace NaN with NoData
         result_array = np.nan_to_num(result_array, nan=-9999)
-        
-        # 5. Сохраняем GeoTIFF
+
+        # 5. Save GeoTIFF
         dt_str = self.scene.dt.replace('-', '').replace(':', '').replace(' ', '_')[:15]
         filename = f"{dt_str}_{index.name.lower()}.tif"
         out_file = output_path / filename
-        
+
         options = [
             'COMPRESS=DEFLATE',
             'PREDICTOR=3',
@@ -262,7 +257,7 @@ class IndexCalculator:
             'BLOCKXSIZE=512',
             'BLOCKYSIZE=512'
         ]
-        
+
         write_geotiff(
             str(out_file),
             result_array,
@@ -271,21 +266,21 @@ class IndexCalculator:
             no_data=-9999,
             options=options
         )
-        
-        # 6. Сохраняем PNG (опционально)
+
+        # 6. Save PNG (optional)
         png_file = None
         if save_png:
             png_path = out_file.with_suffix('.png')
             array_to_png(result_array, str(png_path), normalize=True, no_data=-9999)
             png_file = str(png_path)
-        
-        # 7. Сохраняем логи
+
+        # 7. Save logs
         self._save_params_json(output_path, index, mask is not None, bbox, resample_to, resample_method)
         self._save_metadata(output_path, filename)
-        
-        # 8. Статистика
+
+        # 8. Statistics
         stats = get_raster_statistics(result_array, no_data=-9999)
-        
+
         result = {
             "index": index.name,
             "file": str(out_file),
@@ -294,21 +289,22 @@ class IndexCalculator:
         }
         if png_file:
             result["png_file"] = png_file
-        
+
         return result
-    
+
     def _load_bands(
         self,
         bands: Dict[str, str],
         bbox: Optional[List[float]],
         resample_to: Optional[str],
-        resample_method: str
+        resample_method: str,
+        data_subdir: str
     ) -> tuple:
         """
-        Загружает каналы и преобразует DN -> Reflectance.
-        
-        Возвращает
-        ----------
+        Load bands and convert DN -> Reflectance.
+
+        Returns
+        -------
         tuple
             (band_data, transform, proj)
         """
@@ -316,80 +312,84 @@ class IndexCalculator:
         band_data = {}
         transform = None
         proj = None
-        
+
         for alias, product in bands.items():
-            temp_dir = f"_temp_{alias}"
+            tmp_dir = f"{data_subdir}/_tmp/{alias}"
             result = gdal_scene.save_products(
-                result_subdir=temp_dir,
+                data_subdir=tmp_dir,
                 products=[product],
                 bbox=bbox,
                 resample_to=resample_to,
                 resample_method=resample_method
             )
-            
+
             file_path = result["files"][product]
             info = read_raster(file_path)
             arr = info['array']
-            
+
             if transform is None:
                 transform = info['transform']
                 proj = info['proj']
-            
+
             arr = (arr + self.offset) / self.scale
             band_data[alias] = arr
-        
+
         return band_data, transform, proj
 
 
 # ============================================
-# УДОБНАЯ ФУНКЦИЯ ДЛЯ БЫСТРОГО ВЫЗОВА
+# CONVENIENCE FUNCTION
 # ============================================
 
 def compute_index(
     scene: Scene,
     index: SpectralIndex,
-    result_subdir: str,
+    data_subdir: str,
     mask: Optional[np.ndarray] = None,
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
     scale: float = 10000,
     resample_to: Optional[str] = "highest",
     resample_method: str = "bilinear",
-    save_png: bool = False
+    save_png: bool = False,
+    keep_tmp: bool = False
 ) -> Dict[str, Any]:
     """
-    Быстрое вычисление индекса (однострочник).
-    
-    Параметры
-    ---------
+    Quick index computation.
+
+    Parameters
+    ----------
     scene : Scene
-        Объект сцены
+        Scene object
     index : SpectralIndex
-        Индекс для вычисления
-    result_subdir : str
-        Поддиректория внутри data/processed/
+        Index to compute
+    data_subdir : str
+        Subdirectory inside data/
     mask : np.ndarray, optional
-        Маска облачности
+        Cloud mask
     bbox : List[float], optional
-        BBOX в WGS84 [minx, miny, maxx, maxy]
+        BBOX in WGS84 [minx, miny, maxx, maxy]
     offset : float
-        Сдвиг для DN→Reflectance (по умолчанию -1000)
+        Offset for DN->Reflectance (default -1000)
     scale : float
-        Масштаб для DN→Reflectance (по умолчанию 10000)
+        Scale for DN->Reflectance (default 10000)
     resample_to : str, optional
-        "highest", "lowest" или None
+        "highest", "lowest" or None
     resample_method : str
         "nearest", "bilinear", "cubic"
     save_png : bool, default=False
-        Если True, создать PNG-превью результата
+        If True, create PNG preview
+    keep_tmp : bool, default=False
+        If True, keep temporary files after success
     """
     calc = IndexCalculator(scene, offset=offset, scale=scale)
     return calc.compute(
         index,
-        result_subdir,
+        data_subdir,
         mask=mask,
         bbox=bbox,
         resample_to=resample_to,
         resample_method=resample_method,
-        save_png=save_png
+        save_png=save_png,
+        keep_tmp=keep_tmp
     )

@@ -10,10 +10,10 @@ print("> Print available parameters presets (collections)")
 print(Parameters.list_presets())
 
 # ------------------------------------------------------------
-# 1. Пример С коллекцией (простой путь для новичков)
+# 1. Example WITH collection (simplified)
 # ------------------------------------------------------------
 print("\n> Example WITH collection (simplified)")
-params = Parameters(collection="sentinel2_boa", params={ 
+params = Parameters(collection="sentinel2_boa", params={
     "dt_from": "2024-01-01 00:00:00",
     "dt": "2024-01-02 00:00:00",
     "bbox": [41, 41, 45, 45],
@@ -25,7 +25,7 @@ print("Parameters with collection:")
 pprint(params.to_dict())
 
 # ------------------------------------------------------------
-# 2. Пример БЕЗ коллекции (полный контроль, продвинутый)
+# 2. Example WITHOUT collection (full control, advanced)
 # ------------------------------------------------------------
 print("\n> Example WITHOUT collection (full control, advanced)")
 params_no_collection = Parameters(params={
@@ -43,13 +43,12 @@ print("Parameters (no collection):")
 pprint(params_no_collection.to_dict())
 
 # ------------------------------------------------------------
-# 3. Получение справочной информации о продуктах (GetDeviceProductsInfo)
+# 3. Get products info (DeviceProductsInfo)
 # ------------------------------------------------------------
 print("\n" + "=" * 70)
 print("> Get products info (DeviceProductsInfo)")
 print("=" * 70)
 
-# Создаём объект Parameters с одним прибором и двумя продуктами (включая v_color)
 params = Parameters(params={
     "dt_from": "2024-01-01 00:00:00",
     "dt": "2024-01-02 00:00:00",
@@ -58,11 +57,11 @@ params = Parameters(params={
     "products": ["channel3_l2a", "channel4_l2a", "v_color"]
 })
 
-print("\n--- Текстовый вывод информации о продуктах и приборах ---")
+print("\n--- Products and devices info ---")
 params.print_products_info()
 
 # ------------------------------------------------------------
-# 4. Дальнейшая работа с параметрами
+# 4. Further work with parameters
 # ------------------------------------------------------------
 print("\n" + "=" * 70)
 print("> Further work with parameters")

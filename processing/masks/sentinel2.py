@@ -1,5 +1,6 @@
+# processing/masks/sentinel2.py
 """
-Утилиты для работы с масками Sentinel-2 (SCL).
+Utilities for Sentinel-2 (SCL) masks.
 """
 
 import numpy as np
@@ -12,10 +13,9 @@ from processing.gdal.scene import GDALScene
 
 
 # ============================================
-# КОНСТАНТЫ
+# CONSTANTS
 # ============================================
 
-# Классы SCL (Scene Classification Layer)
 SCL_CLASSES = {
     'NO_DATA': 0,
     'SATURATED_DEFECTIVE': 1,
@@ -31,25 +31,22 @@ SCL_CLASSES = {
     'SNOW': 11
 }
 
-# Предустановленные наборы "хороших" классов
 SCL_GOOD_CLASSES = {
-    'vegetation': [4, 5],           # растительность + почва
-    'vegetation_water': [4, 5, 6],  # + вода
-    'all_land': [4, 5, 6, 7],       # всё кроме облаков и теней
-    'clean': [4, 5, 6, 7],          # синоним all_land
-    'strict': [4, 5],               # только растительность и почва
-    'loose': [4, 5, 6, 7, 2]        # + тёмные области
+    'vegetation': [4, 5],
+    'vegetation_water': [4, 5, 6],
+    'all_land': [4, 5, 6, 7],
+    'clean': [4, 5, 6, 7],
+    'strict': [4, 5],
+    'loose': [4, 5, 6, 7, 2]
 }
 
-# Классы, считающиеся облачными
 SCL_CLOUD_CLASSES = [8, 9, 10]
 
-# Класс теней
 SCL_SHADOW_CLASS = 3
 
 
 # ============================================
-# ФУНКЦИИ ДЛЯ РАБОТЫ С SCL
+# SCL UTILITIES
 # ============================================
 
 def create_scl_mask(
@@ -59,112 +56,111 @@ def create_scl_mask(
     dilate_shadows: int = 0
 ) -> np.ndarray:
     """
-    Создать бинарную маску из SCL.
-    
-    Параметры
-    ---------
-    scl_array : np.ndarray
-        Массив SCL (значения 0-11)
-    good_classes : List[int], optional
-        Классы, считающиеся "хорошими"
-        (по умолчанию [4, 5, 6] = растительность, почва, вода)
-    dilate_clouds : int
-        Радиус раздувания облачных классов (8,9,10)
-    dilate_shadows : int
-        Радиус раздувания теней (класс 3)
-    
-    Возвращает
+    Create a binary mask from SCL.
+
+    Parameters
     ----------
+    scl_array : np.ndarray
+        SCL array (values 0-11)
+    good_classes : List[int], optional
+        Classes considered good (default [4, 5, 6])
+    dilate_clouds : int
+        Dilation radius for cloud classes (8, 9, 10)
+    dilate_shadows : int
+        Dilation radius for shadows (class 3)
+
+    Returns
+    -------
     np.ndarray
-        Маска (1 = хороший пиксель, 0 = исключить)
+        Mask (1 = good pixel, 0 = exclude)
     """
     if good_classes is None:
         good_classes = SCL_GOOD_CLASSES['vegetation_water']
-    
-    # Начальная маска: хорошие классы
+
     mask = np.isin(scl_array, good_classes)
-    
-    # Раздувание облаков
+
     if dilate_clouds > 0:
         cloud_mask = np.isin(scl_array, SCL_CLOUD_CLASSES)
         dilated = binary_dilation(cloud_mask, iterations=dilate_clouds)
         mask = mask & ~dilated
-    
-    # Раздувание теней
+
     if dilate_shadows > 0:
         shadow_mask = (scl_array == SCL_SHADOW_CLASS)
         dilated = binary_dilation(shadow_mask, iterations=dilate_shadows)
         mask = mask & ~dilated
-    
+
     return mask.astype(np.float32)
 
 
-def load_scl_for_scene(scene: Scene) -> np.ndarray:
+def load_scl_for_scene(scene: Scene, data_subdir: str) -> np.ndarray:
     """
-    Загрузить SCL продукт для сцены.
-    
-    Параметры
-    ---------
-    scene : Scene
-        Объект сцены
-    
-    Возвращает
+    Load SCL product for a scene.
+
+    Parameters
     ----------
+    scene : Scene
+        Scene object
+    data_subdir : str
+        Subdirectory inside data/ for temporary files
+
+    Returns
+    -------
     np.ndarray
-        Массив SCL (значения 0-11)
+        SCL array (values 0-11)
     """
     gdal_scene = GDALScene(scene)
-    
-    # Временно сохраняем SCL
+
     result = gdal_scene.save_products(
-        result_subdir="_temp_scl",
+        data_subdir=f"{data_subdir}/_tmp/scl",
         products=["s2_scl"],
         resample_to="highest",
         resample_method="nearest"
     )
-    
+
     scl_path = result["files"].get("s2_scl")
     if not scl_path:
-        raise ValueError("SCL продукт не найден для этой сцены")
-    
-    # Читаем массив
+        raise ValueError("SCL product not found for this scene")
+
     info = read_raster(scl_path)
     scl_array = info['array']
-    
+
     return scl_array.astype(np.int16)
 
 
 def get_scl_mask_for_scene(
     scene: Scene,
+    data_subdir: str,
     good_classes: Optional[List[int]] = None,
     dilate_clouds: int = 2,
     dilate_shadows: int = 3
 ) -> np.ndarray:
     """
-    Удобная функция: загрузить SCL и создать маску за один вызов.
-    
-    Параметры
-    ---------
-    scene : Scene
-        Объект сцены
-    good_classes : List[int], optional
-        Хорошие классы (по умолчанию [4,5,6])
-    dilate_clouds : int
-        Раздувание облаков (по умолчанию 2)
-    dilate_shadows : int
-        Раздувание теней (по умолчанию 3)
-    
-    Возвращает
+    Convenience: load SCL and build mask in one call.
+
+    Parameters
     ----------
+    scene : Scene
+        Scene object
+    data_subdir : str
+        Subdirectory inside data/ for temporary files
+    good_classes : List[int], optional
+        Good classes (default [4, 5, 6])
+    dilate_clouds : int
+        Cloud dilation (default 2)
+    dilate_shadows : int
+        Shadow dilation (default 3)
+
+    Returns
+    -------
     np.ndarray
-        Маска (1 = хороший пиксель, 0 = исключить)
+        Mask (1 = good pixel, 0 = exclude)
     """
-    scl_array = load_scl_for_scene(scene)
+    scl_array = load_scl_for_scene(scene, data_subdir)
     return create_scl_mask(scl_array, good_classes, dilate_clouds, dilate_shadows)
 
 
 def get_scl_class_name(class_code: int) -> str:
-    """Получить название класса SCL по коду."""
+    """Return SCL class name by code."""
     for name, code in SCL_CLASSES.items():
         if code == class_code:
             return name
@@ -172,16 +168,16 @@ def get_scl_class_name(class_code: int) -> str:
 
 
 def print_scl_statistics(scl_array: np.ndarray) -> None:
-    """Вывести статистику распределения классов SCL."""
+    """Print SCL class distribution."""
     print("\nSCL Statistics:")
     print("-" * 40)
-    
+
     unique, counts = np.unique(scl_array, return_counts=True)
     total = scl_array.size
-    
+
     for code, count in zip(unique, counts):
         name = get_scl_class_name(code)
         percent = 100 * count / total
         print(f"  {code:2d} {name:<20}: {percent:5.1f}% ({count} pixels)")
-    
+
     print("-" * 40)
