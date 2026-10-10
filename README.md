@@ -153,6 +153,7 @@
 ├── .env.example                    # Пример переменных окружения
 ├── README.md                       # Документация
 └── requirements.txt                # Зависимости (requests, python-dotenv)
+```
 
 ## Установка
 
