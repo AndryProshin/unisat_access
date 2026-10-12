@@ -3,11 +3,13 @@
 Utilities for Sentinel-2 (SCL) masks.
 """
 
+import shutil
 import numpy as np
 from typing import List, Optional, Dict
 from scipy.ndimage import binary_dilation
 
 from unisat_api.scene import Scene
+from unisat_api import config
 from processing.gdal.utils import read_raster
 from processing.gdal.scene import GDALScene
 
@@ -92,9 +94,17 @@ def create_scl_mask(
     return mask.astype(np.float32)
 
 
-def load_scl_for_scene(scene: Scene, data_subdir: str) -> np.ndarray:
+def load_scl_for_scene(
+    scene: Scene,
+    data_subdir: str,
+    keep_tmp: bool = False
+) -> np.ndarray:
     """
     Load SCL product for a scene.
+
+    Temporary GeoTIFF is written to <data_subdir>/_tmp/scl/.
+    On success and keep_tmp=False, the whole _tmp directory is removed.
+    On error it is left intact for inspection.
 
     Parameters
     ----------
@@ -102,6 +112,8 @@ def load_scl_for_scene(scene: Scene, data_subdir: str) -> np.ndarray:
         Scene object
     data_subdir : str
         Subdirectory inside data/ for temporary files
+    keep_tmp : bool, default=False
+        If True, keep temporary files after success
 
     Returns
     -------
@@ -124,6 +136,10 @@ def load_scl_for_scene(scene: Scene, data_subdir: str) -> np.ndarray:
     info = read_raster(scl_path)
     scl_array = info['array']
 
+    if not keep_tmp:
+        tmp_root = config.DATA_DIR / data_subdir / "_tmp"
+        shutil.rmtree(tmp_root, ignore_errors=True)
+
     return scl_array.astype(np.int16)
 
 
@@ -132,7 +148,8 @@ def get_scl_mask_for_scene(
     data_subdir: str,
     good_classes: Optional[List[int]] = None,
     dilate_clouds: int = 2,
-    dilate_shadows: int = 3
+    dilate_shadows: int = 3,
+    keep_tmp: bool = False
 ) -> np.ndarray:
     """
     Convenience: load SCL and build mask in one call.
@@ -149,13 +166,15 @@ def get_scl_mask_for_scene(
         Cloud dilation (default 2)
     dilate_shadows : int
         Shadow dilation (default 3)
+    keep_tmp : bool, default=False
+        If True, keep temporary files after success
 
     Returns
     -------
     np.ndarray
         Mask (1 = good pixel, 0 = exclude)
     """
-    scl_array = load_scl_for_scene(scene, data_subdir)
+    scl_array = load_scl_for_scene(scene, data_subdir, keep_tmp=keep_tmp)
     return create_scl_mask(scl_array, good_classes, dilate_clouds, dilate_shadows)
 
 

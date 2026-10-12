@@ -15,6 +15,7 @@ Features:
 
 import json
 import csv
+import shutil
 import numpy as np
 from pathlib import Path
 from datetime import datetime
@@ -225,7 +226,7 @@ class IndexCalculator:
 
         # 1. Load bands
         band_data, transform, proj = self._load_bands(
-            index.bands, bbox, resample_to, resample_method, data_subdir
+            index.bands, bbox, resample_to, resample_method, data_subdir, keep_tmp
         )
 
         # 2. Compute index
@@ -298,10 +299,15 @@ class IndexCalculator:
         bbox: Optional[List[float]],
         resample_to: Optional[str],
         resample_method: str,
-        data_subdir: str
+        data_subdir: str,
+        keep_tmp: bool = False
     ) -> tuple:
         """
         Load bands and convert DN -> Reflectance.
+
+        Temporary GeoTIFFs are written to <data_subdir>/_tmp/<alias>/.
+        On success and keep_tmp=False, the whole _tmp directory is removed.
+        On error it is left intact for inspection.
 
         Returns
         -------
@@ -333,6 +339,10 @@ class IndexCalculator:
 
             arr = (arr + self.offset) / self.scale
             band_data[alias] = arr
+
+        if not keep_tmp:
+            tmp_root = config.DATA_DIR / data_subdir / "_tmp"
+            shutil.rmtree(tmp_root, ignore_errors=True)
 
         return band_data, transform, proj
 
