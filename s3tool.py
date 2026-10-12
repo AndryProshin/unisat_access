@@ -12,6 +12,13 @@ Public API style -- no exceptions:
 
 All paths accepted and returned by methods are relative to base.
 
+Naming scheme: "<side>_file" / "<side>_dir" is the source object,
+"<other>_base_dir" is the parent directory it is placed into. The
+object name is always taken from the source (basename), never changed.
+Uploading a local folder "foo" into s3_base_dir="bar" yields
+base/bar/foo/...; downloading base/bar/foo/... into local_base_dir="."
+yields ./foo/...
+
 Mask works like in shell: applied to the name (last component of the
 path), case-sensitive, recursion is a separate flag.
 """
@@ -326,19 +333,27 @@ class S3Tool:
     # Files: S3 <-> local disk
     # ------------------------------------------------------------------
 
-    def download_file(self, src: str, local_path: str) -> bool:
+    def download_file(self, s3_file: str, local_base_dir: str) -> bool:
         """
-        Download base/src to local file local_path.
-        If local_path already exists -- ALREADY_EXISTS.
+        Download base/s3_file to local_base_dir/<basename(s3_file)>.
+        The source file name is preserved on the local side.
+        If the local file already exists -- ALREADY_EXISTS.
         """
         self._clear_state()
-        if os.path.exists(local_path):
-            self._set_error("ALREADY_EXISTS", f"local file already exists: {local_path}")
+
+        name = self._name_of(s3_file)
+        if not name:
+            self._set_error("INVALID_PATH", "s3_file is empty")
             return False
 
-        key = self._abs(src)
+        local_file = os.path.join(local_base_dir, name)
+        if os.path.exists(local_file):
+            self._set_error("ALREADY_EXISTS", f"local file already exists: {local_file}")
+            return False
+
+        key = self._abs(s3_file)
         try:
-            self.client.download_file(self.bucket, key, local_path)
+            self.client.download_file(self.bucket, key, local_file)
         except ClientError as e:
             code, msg = _map_client_error(e)
             self._set_error(code, msg)
@@ -348,17 +363,20 @@ class S3Tool:
             return False
         return True
 
-    def upload_file(self, local_path: str, dst: str) -> bool:
+    def upload_file(self, local_file: str, s3_base_dir: str) -> bool:
         """
-        Upload local file local_path to base/dst.
-        If the object already exists -- ALREADY_EXISTS.
+        Upload local file local_file to base/s3_base_dir/<basename(local_file)>.
+        The source file name is preserved in S3.
+        If the s3 object already exists -- ALREADY_EXISTS.
         """
         self._clear_state()
-        if not os.path.isfile(local_path):
-            self._set_error("NOT_FOUND", f"local file not found: {local_path}")
+        if not os.path.isfile(local_file):
+            self._set_error("NOT_FOUND", f"local file not found: {local_file}")
             return False
 
-        key = self._abs(dst)
+        name = os.path.basename(local_file)
+        rel = self._join_prefix(s3_base_dir, name)
+        key = self._abs(rel)
         try:
             if self._object_exists(key):
                 self._set_error("ALREADY_EXISTS", f"s3 object already exists: {key}")
@@ -372,7 +390,7 @@ class S3Tool:
             return False
 
         try:
-            self.client.upload_file(local_path, self.bucket, key)
+            self.client.upload_file(local_file, self.bucket, key)
         except ClientError as e:
             code, msg = _map_client_error(e)
             self._set_error(code, msg)
@@ -386,10 +404,10 @@ class S3Tool:
     # Files: S3 <-> memory
     # ------------------------------------------------------------------
 
-    def download_file_to_memory(self, src: str) -> Optional[bytes]:
-        """Read base/src into memory. On error -- None."""
+    def download_file_to_memory(self, s3_file: str) -> Optional[bytes]:
+        """Read base/s3_file into memory. On error -- None."""
         self._clear_state()
-        key = self._abs(src)
+        key = self._abs(s3_file)
         try:
             response = self.client.get_object(Bucket=self.bucket, Key=key)
             return response["Body"].read()
@@ -401,13 +419,13 @@ class S3Tool:
             self._set_error("NETWORK", str(e))
             return None
 
-    def upload_file_from_memory(self, dst: str, data: bytes) -> bool:
+    def upload_file_from_memory(self, s3_file: str, data: bytes) -> bool:
         """
-        Write bytes to base/dst.
+        Write bytes to base/s3_file.
         If the object already exists -- ALREADY_EXISTS.
         """
         self._clear_state()
-        key = self._abs(dst)
+        key = self._abs(s3_file)
         try:
             if self._object_exists(key):
                 self._set_error("ALREADY_EXISTS", f"s3 object already exists: {key}")
@@ -435,9 +453,9 @@ class S3Tool:
     # Files: removal
     # ------------------------------------------------------------------
 
-    def remove_file(self, path: str) -> bool:
+    def remove_file(self, s3_file: str) -> bool:
         self._clear_state()
-        key = self._abs(path)
+        key = self._abs(s3_file)
         try:
             self.client.delete_object(Bucket=self.bucket, Key=key)
         except ClientError as e:
@@ -506,25 +524,34 @@ class S3Tool:
     # Directories: S3 <-> local disk
     # ------------------------------------------------------------------
 
-    def download_dir(self, src: str, local_parent: str,
-                     overwrite: bool = False) -> bool:
+    def download_dir(self, s3_dir: str, local_base_dir: str,
+                     overwrite: bool = False,
+                     make_rdy: bool = False) -> bool:
         """
-        Download base/src to local_parent/<src name>/.
-        Empty src -- INVALID_PATH.
+        Download base/s3_dir to local_base_dir/<basename(s3_dir)>/.
+
+        The source directory name is preserved on the local side:
+        download_dir("scenes/ndvi_125", ".") creates ./ndvi_125/.
+
+        Empty s3_dir -- INVALID_PATH.
         If overwrite=False and the target folder or at least one target
         file already exists -- ALREADY_EXISTS (checked before starting).
         If overwrite=True -- existing local files are overwritten,
         extra ones (not in S3) are not touched.
+
+        If make_rdy=True, a marker file <basename(s3_dir)>.rdy is
+        created in local_base_dir after a successful download. No marker
+        is created if the download fails.
         """
         self._clear_state()
-        src = (src or "").strip("/")
-        if not src:
-            self._set_error("INVALID_PATH", "src directory is empty")
+        s3_dir = (s3_dir or "").strip("/")
+        if not s3_dir:
+            self._set_error("INVALID_PATH", "s3_dir is empty")
             return False
 
-        name = src.rsplit("/", 1)[-1]
-        target_dir = os.path.join(local_parent, name)
-        prefix = self._dir_key(src)
+        name = s3_dir.rsplit("/", 1)[-1]
+        target_dir = os.path.join(local_base_dir, name)
+        prefix = self._dir_key(s3_dir)
 
         files, _ = self._list_objects(prefix, recursive=True)
         if files is None:
@@ -554,26 +581,49 @@ class S3Tool:
             except (EndpointConnectionError, BotoCoreError) as e:
                 self._set_error("NETWORK", f"failed on {key}: {e}")
                 return False
+
+        if make_rdy:
+            marker_path = os.path.join(local_base_dir, name + READY_EXT)
+            try:
+                with open(marker_path, "w"):
+                    pass
+            except OSError as e:
+                self._set_error("UNKNOWN", f"cannot create marker {marker_path}: {e}")
+                return False
+
         return True
 
-    def upload_dir(self, local_path: str, dst: str = "") -> bool:
+    def upload_dir(self, local_dir: str, s3_base_dir: str = "",
+                   make_rdy: bool = False) -> bool:
         """
-        Upload local folder local_path to base/dst.
-        Empty dst -- uploads directly into base.
+        Upload local folder local_dir to
+        base/s3_base_dir/<basename(local_dir)>/.
+
+        The source directory name is preserved in S3:
+        upload_dir("ndvi_125", s3_base_dir="scenes") yields
+        base/scenes/ndvi_125/....
+
+        Empty s3_base_dir -- uploads directly into base
+        (base/<basename(local_dir)>/...).
         Conflicts are checked with a SINGLE list_objects_v2 call.
+
+        If make_rdy=True, a marker object
+        s3_base_dir/<basename(local_dir)>.rdy is created after a
+        successful upload. No marker is created if the upload fails.
         """
         self._clear_state()
-        if not os.path.isdir(local_path):
-            self._set_error("NOT_FOUND", f"local directory not found: {local_path}")
+        if not os.path.isdir(local_dir):
+            self._set_error("NOT_FOUND", f"local directory not found: {local_dir}")
             return False
 
-        dst_prefix = self._dir_key(dst)
+        name = os.path.basename(os.path.normpath(local_dir))
+        dst_prefix = self._dir_key(self._join_prefix(s3_base_dir, name))
 
         planned = []
-        for root, _dirs, filenames in os.walk(local_path):
+        for root, _dirs, filenames in os.walk(local_dir):
             for fname in filenames:
                 full = os.path.join(root, fname)
-                rel = os.path.relpath(full, local_path).replace(os.sep, "/")
+                rel = os.path.relpath(full, local_dir).replace(os.sep, "/")
                 planned.append((full, dst_prefix + rel))
 
         existing = self._existing_keys_under(dst_prefix)
@@ -598,6 +648,19 @@ class S3Tool:
             except (EndpointConnectionError, BotoCoreError) as e:
                 self._set_error("NETWORK", f"failed on {key}: {e}")
                 return False
+
+        if make_rdy:
+            marker_key = self._abs(self._join_prefix(s3_base_dir, name + READY_EXT))
+            try:
+                self.client.put_object(Bucket=self.bucket, Key=marker_key, Body=b"")
+            except ClientError as e:
+                code, msg = _map_client_error(e)
+                self._set_error(code, f"failed to create marker {marker_key}: {msg}")
+                return False
+            except (EndpointConnectionError, BotoCoreError) as e:
+                self._set_error("NETWORK", f"failed to create marker {marker_key}: {e}")
+                return False
+
         return True
 
     # ------------------------------------------------------------------
@@ -693,7 +756,7 @@ class S3Tool:
     ) -> bool:
         """
         Upload a single ready pair <name>/ + <name>.rdy from local_root
-        to base/dst_prefix.
+        to base/dst_prefix/<name>/ + base/dst_prefix/<name>.rdy.
 
         If keep=False (default), local copies are removed after upload.
         If keep=True, local copies are kept.
@@ -716,13 +779,15 @@ class S3Tool:
             self._warning = saved_warning
             return False
 
-        dst_dir = self._join_prefix(dst_prefix, name)
-        dst_marker = dst_dir + READY_EXT
+        dst_marker = self._join_prefix(dst_prefix, name + READY_EXT)
 
-        if not self.upload_dir(local_dir, dst_dir):
+        # upload_dir preserves the source directory name, so passing
+        # dst_prefix (the parent) is enough: the resulting key will be
+        # base/dst_prefix/<name>/...
+        if not self.upload_dir(local_dir, dst_prefix):
             self._warning = saved_warning
             return False
-        if not self.upload_file(local_marker, dst_marker):
+        if not self.upload_file(local_marker, dst_prefix):
             self._warning = saved_warning
             return False
 
