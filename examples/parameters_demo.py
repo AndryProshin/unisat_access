@@ -92,3 +92,11 @@ params3 = Parameters(user_preset="my_query", params={
 })
 print("Parameters after override:")
 pprint(params3.to_dict())
+
+# ------------------------------------------------------------
+# 5. Products info cache (debug, to be removed later)
+# ------------------------------------------------------------
+print("\n" + "=" * 70)
+print("> Products info cache (debug)")
+print("=" * 70)
+pprint(params.get_products_info())

@@ -125,7 +125,6 @@ def load_scl_for_scene(
     result = gdal_scene.save_products(
         data_subdir=f"{data_subdir}/_tmp/scl",
         products=["s2_scl"],
-        resample_to="highest",
         resample_method="nearest"
     )
 

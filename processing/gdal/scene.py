@@ -47,10 +47,14 @@ class GDALScene:
         Merge fragments per product, clip by bbox and save as GeoTIFF.
 
         Args:
-            data_subdir: subdirectory inside data/_scene/
+            data_subdir: subdirectory inside data/
             products: list of products (None -> all scene products)
             bbox: [minx, miny, maxx, maxy] in WGS84 (None -> from scene params)
-            resample_to: resampling (None, "highest", "lowest", or meters)
+            resample_to: one of:
+                None        -- keep native resolution
+                "highest"   -- best (min) resolution among the requested products
+                "lowest"    -- worst (max) resolution among the requested products
+                <number>    -- target resolution in meters
             resample_method: resampling method ("nearest", "bilinear", "cubic")
             qlook: if True, create a quicklook PNG next to GeoTIFF
 
@@ -60,8 +64,6 @@ class GDALScene:
         output_path = config.DATA_DIR / data_subdir
         output_path.mkdir(parents=True, exist_ok=True)
 
-        self._save_params_json(output_path, resample_to, resample_method, bbox, products)
-
         if products is None:
             products = list(self._scene.products.keys())
 
@@ -69,6 +71,10 @@ class GDALScene:
             bbox = self._scene._params.get("bbox")
             if bbox is None:
                 raise ValueError("bbox is not set in scene params nor in arguments")
+
+        resolved_resample = self._resolve_resample_to(resample_to, products)
+
+        self._save_params_json(output_path, resolved_resample, resample_method, bbox, products)
 
         print(f"\n=== Diagnostics ===")
         print(f"Scene: {self._scene.dt}")
@@ -86,7 +92,7 @@ class GDALScene:
         for product in products:
             filename = self._process_product(
                 product, fragments, bbox, output_path,
-                resample_to, resample_method
+                resolved_resample, resample_method
             )
             if filename:
                 tif_path = output_path / filename
@@ -109,10 +115,51 @@ class GDALScene:
             "qlook_files": {prod: str(output_path / f"{dt_str}_{prod}_qlook.png") for prod in saved_files} if qlook else {}
         }
 
+    def _resolve_resample_to(
+        self,
+        resample_to: Optional[Union[str, float]],
+        products: List[str]
+    ) -> Optional[float]:
+        """
+        Turn the user-facing resample_to into a concrete number of meters.
+
+        - None        -> None (no resampling)
+        - number      -> as is
+        - "highest"   -> min resolution among requested products
+        - "lowest"    -> max resolution among requested products
+
+        If the requested mode is highest/lowest but no product resolution
+        is available, falls back to None with a warning.
+        """
+        if resample_to is None:
+            return None
+        if isinstance(resample_to, (int, float)):
+            return float(resample_to)
+        if resample_to not in ("highest", "lowest"):
+            print(f"Warning: unknown resample_to={resample_to!r}, ignoring")
+            return None
+
+        resolutions = []
+        for product in products:
+            res = self._scene.get_resolution(product)
+            if res is not None:
+                resolutions.append(res)
+
+        if not resolutions:
+            print(f"Warning: resample_to={resample_to!r} requested, "
+                  f"but no product resolutions are available; "
+                  f"resampling is skipped")
+            return None
+
+        target = min(resolutions) if resample_to == "highest" else max(resolutions)
+        print(f"resample_to={resample_to!r} -> {target} m "
+              f"(from {len(resolutions)} product resolution(s))")
+        return float(target)
+
     def _save_params_json(
         self,
         output_path: Path,
-        resample_to: Optional[Union[str, float]],
+        resample_to: Optional[float],
         resample_method: str,
         bbox: Optional[List[float]],
         products: Optional[List[str]]
@@ -189,7 +236,7 @@ class GDALScene:
         fragments: List[Dict],
         bbox_wgs84: List[float],
         output_path: Path,
-        resample_to: Optional[Union[str, float]],
+        resample_to: Optional[float],
         resample_method: str
     ) -> Optional[str]:
         """Process a single product: merge fragments and clip by bbox."""
@@ -227,24 +274,9 @@ class GDALScene:
         }
 
         if resample_to is not None:
-            src_ds = gdal.Open(vrt_path)
-            geo = src_ds.GetGeoTransform()
-            src_res = abs(geo[1])
-            src_ds = None
-
-            if resample_to == "highest":
-                target_res = src_res
-            elif resample_to == "lowest":
-                target_res = src_res
-            elif isinstance(resample_to, (int, float)):
-                target_res = resample_to
-            else:
-                target_res = src_res
-
-            if target_res != src_res:
-                warp_options['xRes'] = target_res
-                warp_options['yRes'] = target_res
-                warp_options['resampleAlg'] = self._get_resample_alg(resample_method)
+            warp_options['xRes'] = resample_to
+            warp_options['yRes'] = resample_to
+            warp_options['resampleAlg'] = self._get_resample_alg(resample_method)
 
         print(f"Clipping by bbox and saving to {output_file.name}...")
         gdal.Warp(str(output_file), vrt_path, **warp_options)

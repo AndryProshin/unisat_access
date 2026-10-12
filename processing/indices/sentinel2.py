@@ -100,7 +100,8 @@ def compute_ndvi(
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
     scale: float = 10000,
-    save_png: bool = False
+    save_png: bool = False,
+    keep_tmp: bool = False
 ) -> Dict[str, Any]:
     """Quick NDVI computation for Sentinel-2."""
     return compute_index(
@@ -111,7 +112,8 @@ def compute_ndvi(
         bbox=bbox,
         offset=offset,
         scale=scale,
-        save_png=save_png
+        save_png=save_png,
+        keep_tmp=keep_tmp
     )
 
 
@@ -122,7 +124,8 @@ def compute_evi(
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
     scale: float = 10000,
-    save_png: bool = False
+    save_png: bool = False,
+    keep_tmp: bool = False
 ) -> Dict[str, Any]:
     """Quick EVI computation for Sentinel-2."""
     return compute_index(
@@ -133,7 +136,8 @@ def compute_evi(
         bbox=bbox,
         offset=offset,
         scale=scale,
-        save_png=save_png
+        save_png=save_png,
+        keep_tmp=keep_tmp
     )
 
 
@@ -144,7 +148,8 @@ def compute_ndwi(
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
     scale: float = 10000,
-    save_png: bool = False
+    save_png: bool = False,
+    keep_tmp: bool = False
 ) -> Dict[str, Any]:
     """Quick NDWI computation for Sentinel-2."""
     return compute_index(
@@ -155,7 +160,8 @@ def compute_ndwi(
         bbox=bbox,
         offset=offset,
         scale=scale,
-        save_png=save_png
+        save_png=save_png,
+        keep_tmp=keep_tmp
     )
 
 
@@ -166,7 +172,8 @@ def compute_savi(
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
     scale: float = 10000,
-    save_png: bool = False
+    save_png: bool = False,
+    keep_tmp: bool = False
 ) -> Dict[str, Any]:
     """Quick SAVI computation for Sentinel-2."""
     return compute_index(
@@ -177,7 +184,8 @@ def compute_savi(
         bbox=bbox,
         offset=offset,
         scale=scale,
-        save_png=save_png
+        save_png=save_png,
+        keep_tmp=keep_tmp
     )
 
 
@@ -188,7 +196,8 @@ def compute_ndmi(
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
     scale: float = 10000,
-    save_png: bool = False
+    save_png: bool = False,
+    keep_tmp: bool = False
 ) -> Dict[str, Any]:
     """Quick NDMI computation for Sentinel-2."""
     return compute_index(
@@ -199,7 +208,8 @@ def compute_ndmi(
         bbox=bbox,
         offset=offset,
         scale=scale,
-        save_png=save_png
+        save_png=save_png,
+        keep_tmp=keep_tmp
     )
 
 
@@ -210,7 +220,8 @@ def compute_nbr(
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
     scale: float = 10000,
-    save_png: bool = False
+    save_png: bool = False,
+    keep_tmp: bool = False
 ) -> Dict[str, Any]:
     """Quick NBR computation for Sentinel-2."""
     return compute_index(
@@ -221,5 +232,6 @@ def compute_nbr(
         bbox=bbox,
         offset=offset,
         scale=scale,
-        save_png=save_png
+        save_png=save_png,
+        keep_tmp=keep_tmp
     )

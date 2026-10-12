@@ -74,7 +74,7 @@
 │   └── ...                         # Пользовательские поддиректории
 ├── .env.example                    # Пример переменных окружения
 ├── README.md                       # Документация
-└── requirements.txt                # Зависимости (requests, python-dotenv)
+└── requirements.txt                # Зависимости
 ```
 
 ## Установка
@@ -86,7 +86,8 @@ requests>=2.28.0
 python-dotenv>=1.0.0
 numpy>=1.24.0
 scipy>=1.10.0
-gdal>=3.0.0
+Pillow>=10.0.0
+boto3>=1.28.0
 ```
 
 **Примечание:** Для использования библиотек `unisat_api` достаточно модулей `requests` и `python-dotenv`.
@@ -112,12 +113,12 @@ UKEY=ваш_ключ
 Опционально, для записи результатов в S3:
 
 ```dotenv
-S3_BUCKET=my-bucket
-S3_ENDPOINT=https://s3.example.com
-S3_ACCESS_KEY=...
-S3_SECRET_KEY=...
-S3_PREFIX=optional/prefix
-S3_ADDRESSING_STYLE=path
+S3TOOL_BUCKET=my-bucket
+S3TOOL_BASE=optional/prefix
+AWS_ENDPOINT_URL=https://s3.example.com
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_S3_ADDRESSING_STYLE=path
 ```
 
 Если S3 не настроен, работа идёт только с локальной директорией `data/`.
@@ -178,6 +179,8 @@ params3 = Parameters(user_preset="my_query", params={
 })
 print(params3.to_dict())
 ```
+
+Обязательные параметры запроса: `dt`, `dt_from`, `products`, `bbox`, `devices`.
 
 ### Metadata
 
@@ -300,7 +303,7 @@ for scene in metadata:
 | data_subdir     | str                         | Имя поддиректории внутри data/ (обязательный)                                     |
 | products        | Optional[List[str]]         | Список продуктов для обработки (None → все продукты сцены)                        |
 | bbox            | Optional[List[float]]       | [minx, miny, maxx, maxy] в WGS84 градусах (None → из параметров сцены)            |
-| resample_to     | Optional[Union[str, float]] | Пересэмплирование: None, `highest`, `lowest`, или число в метрах                  |
+| resample_to     | Optional[Union[str, float]] | None — не менять; `highest` — меньше метров (лучше); `lowest` — больше метров (хуже); число — метры |
 | resample_method | str                         | Метод пересэмплинга: `nearest`, `bilinear`, `cubic` (по умолчанию `nearest`)      |
 | qlook           | bool                        | Если True, создать обзорное изображение (PNG) рядом с GeoTIFF                     |
 
@@ -325,6 +328,12 @@ inverted = ~mask          # инверсия
 # Применение маски к данным
 masked_array = mask.apply_to_array(array)
 mask.apply_to_file("input.tif", "output.tif")
+
+# Сохранение маски локально (путь относительно data/)
+mask.save(data_path="masks/clean/scl_clean", save_png=True)
+
+# Сохранение маски в S3 (путь относительно S3TOOL_BASE)
+mask.save(s3_path="masks/scl_clean", save_png=True)
 ```
 
 ### Спектральные индексы
@@ -349,6 +358,8 @@ my_index = SpectralIndex(
 )
 result = compute_index(scene, my_index, "custom_results")
 ```
+
+Все операции (`compute_ndvi`, `compute_evi` и др.) принимают `save_png` (создать PNG-превью) и `keep_tmp` (оставить временные файлы после успеха).
 
 ### Маски для Sentinel-2 (SCL)
 
@@ -380,4 +391,4 @@ result = compute_ndvi(scene, "ndvi_clean", mask=mask)
   * `_params.json` — полные параметры запроса и обработки;
   * `_metadata.txt` — CSV-подобный лог для всех сцен.
 * Маски универсальны и могут быть созданы из любого источника (файл, массив, SCL).
-* Если настроен S3, результаты могут записываться туда напрямую; в противном случае работа идёт с локальной директорией `data/`.
+* Маски могут сохраняться в S3: `Mask.save(s3_path=...)`. Для этого `s3tool` должен быть настроен (см. раздел «Настройка»).

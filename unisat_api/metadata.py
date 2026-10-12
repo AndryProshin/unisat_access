@@ -40,17 +40,34 @@ class Metadata:
             raise MetadataError(f"Ошибка загрузки метаданных: {e}") from None
         except Exception as e:
             raise MetadataError(f"Неожиданная ошибка: {e}") from None
+
+    def _make_scene(self, data: dict) -> Scene:
+        """
+        Build a Scene, wiring in the products info slice for its device.
+
+        Products info is cached inside Parameters (one entry per device),
+        so this does not perform any network calls by itself.
+        """
+        device = data.get("common", {}).get("device")
+        device_info = self.params.get_products_info().get(device)
+        return Scene(
+            data,
+            self.params.to_dict(),
+            config.METADATA_BASE_URL,
+            config.METADATA_TIMEOUT,
+            products_info=device_info,
+        )
     
     def __len__(self) -> int:
         return len(self._raw_json["DATA"])
     
     def __iter__(self):
         for data in self._raw_json["DATA"]:
-            yield Scene(data, self.params.to_dict(), config.METADATA_BASE_URL, config.METADATA_TIMEOUT)
+            yield self._make_scene(data)
     
     def __getitem__(self, idx: int):
         data = self._raw_json["DATA"][idx]
-        return Scene(data, self.params.to_dict(), config.METADATA_BASE_URL, config.METADATA_TIMEOUT)
+        return self._make_scene(data)
     
     @property
     def raw_json(self):

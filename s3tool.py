@@ -5,6 +5,18 @@ S3Tool provides a set of operations on "files" and "directories" in an
 S3 bucket, with all relative paths resolved against the base directory
 specified when the object is created.
 
+Configuration:
+  By default .env is read from the directory containing this file.
+  Recognized variables:
+    S3TOOL_BUCKET           -- bucket name (used when bucket is not passed)
+    S3TOOL_BASE             -- base directory inside the bucket (default "")
+    AWS_ENDPOINT_URL        -- custom endpoint (Ceph RGW, MinIO, etc.)
+    AWS_ACCESS_KEY_ID       -- access key
+    AWS_SECRET_ACCESS_KEY   -- secret key
+    AWS_S3_ADDRESSING_STYLE -- "path" or "virtual"
+  If an explicit s3_client is passed to the constructor, .env is not used
+  for building the client (but bucket/base defaults still apply).
+
 Public API style -- no exceptions:
   - "does" operations    -> bool (False = error, details in get_error_*)
   - "returns" operations -> data | None (None = error)
@@ -30,9 +42,11 @@ import os
 import shutil
 import sys
 import time
+from pathlib import Path
 from typing import Optional
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import (
     BotoCoreError,
     ClientError,
@@ -40,6 +54,12 @@ from botocore.exceptions import (
     NoCredentialsError,
     NoRegionError,
 )
+from dotenv import load_dotenv
+
+
+# Load .env from the directory containing this file (if it exists).
+# Explicit s3_client in the constructor bypasses this configuration.
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
 READY_EXT = ".rdy"
@@ -92,31 +112,50 @@ class S3Tool:
 
     def __init__(
         self,
-        bucket: str,
-        base: str = "",
+        bucket: Optional[str] = None,
+        base: Optional[str] = None,
         raise_on_fatal: bool = False,
         s3_client=None,
     ) -> None:
         """
-        :param bucket:          bucket name.
+        :param bucket:          bucket name. If None, taken from
+                                S3TOOL_BUCKET in .env.
         :param base:            base "directory" for all relative paths.
-                                Empty string -- bucket root.
+                                If None, taken from S3TOOL_BASE in .env
+                                (default ""). Empty string -- bucket root.
         :param raise_on_fatal:  what to do on fatal error:
                                 False (default) -- stderr + sys.exit(1);
                                 True            -- raise S3ToolError.
-        :param s3_client:       optional preconfigured boto3 client.
+        :param s3_client:       optional preconfigured boto3 client. If
+                                given, .env is not used to build the client.
         """
+        if bucket is None:
+            bucket = os.getenv("S3TOOL_BUCKET")
+        if base is None:
+            base = os.getenv("S3TOOL_BASE", "") or ""
+
+        if not bucket:
+            self._fatal(
+                "INVALID_PATH",
+                "bucket is not set (pass it explicitly or set S3TOOL_BUCKET in .env)",
+                raise_on_fatal,
+            )
+            return
+
         self.bucket = bucket
         self.base = self._normalize(base)
         self._error_code: Optional[str] = None
         self._error_message: Optional[str] = None
         self._warning: Optional[str] = None
 
-        try:
-            self.client = s3_client or boto3.client("s3")
-        except (NoCredentialsError, NoRegionError, BotoCoreError) as e:
-            self._fatal("ACCESS_DENIED", f"cannot create S3 client: {e}", raise_on_fatal)
-            return
+        if s3_client is not None:
+            self.client = s3_client
+        else:
+            try:
+                self.client = self._build_client_from_env()
+            except (NoCredentialsError, NoRegionError, BotoCoreError) as e:
+                self._fatal("ACCESS_DENIED", f"cannot create S3 client: {e}", raise_on_fatal)
+                return
 
         try:
             self.client.head_bucket(Bucket=self.bucket)
@@ -125,6 +164,20 @@ class S3Tool:
             self._fatal(code, f"cannot access bucket {self.bucket!r}: {msg}", raise_on_fatal)
         except (EndpointConnectionError, BotoCoreError) as e:
             self._fatal("NETWORK", f"cannot reach S3: {e}", raise_on_fatal)
+
+    @staticmethod
+    def _build_client_from_env():
+        """Build a boto3 S3 client from AWS_* variables (loaded from .env)."""
+        endpoint = os.getenv("AWS_ENDPOINT_URL")
+        addressing = os.getenv("AWS_S3_ADDRESSING_STYLE")
+
+        kwargs = {}
+        if endpoint:
+            kwargs["endpoint_url"] = endpoint
+        if addressing:
+            kwargs["config"] = Config(s3={"addressing_style": addressing})
+
+        return boto3.client("s3", **kwargs)
 
     # ------------------------------------------------------------------
     # Diagnostics

@@ -13,12 +13,20 @@ from .exceptions import NetworkError
 
 
 class Scene:
-    def __init__(self, data: dict, params: dict, base_url: str, timeout: int):
+    def __init__(
+        self,
+        data: dict,
+        params: dict,
+        base_url: str,
+        timeout: int,
+        products_info: Optional[dict] = None
+    ):
         self._data = data
         self._params = params
         self._base_url = base_url
         self._timeout = timeout
         self._fragments = None
+        self._products_info = products_info
 
     @property
     def dt(self) -> str:
@@ -50,6 +58,55 @@ class Scene:
             else:
                 physical.append(product_name)
         return physical, virtual
+
+    def get_resolution(self, product: str) -> Optional[float]:
+        """
+        Return native resolution (meters) for a product, or None.
+
+        Physical products map to spectral bands via products_info:
+        the product entry contains 'band' (single) or 'bands' (list),
+        or 'channels' with nested 'band'/'bands' fields. The resolution
+        of the product is the minimum resolution among its bands.
+
+        Virtual products (v_*, _*) have no fragments and no resolution.
+        """
+        if not self._products_info:
+            return None
+        if product.startswith(('_', 'v_')):
+            return None
+
+        products = self._products_info.get("products") or {}
+        bands = self._products_info.get("bands") or {}
+        info = products.get(product)
+        if not info:
+            return None
+
+        band_names: List[str] = []
+
+        if "band" in info:
+            band_names.append(info["band"])
+        if "bands" in info:
+            band_names.extend(info["bands"])
+
+        channels = info.get("channels") or []
+        for ch in channels:
+            if "band" in ch:
+                band_names.append(ch["band"])
+            if "bands" in ch:
+                band_names.extend(ch["bands"])
+
+        resolutions = []
+        for band_name in band_names:
+            band = bands.get(band_name)
+            if not band:
+                continue
+            res = band.get("resolution")
+            if isinstance(res, (int, float)):
+                resolutions.append(res)
+
+        if not resolutions:
+            return None
+        return float(min(resolutions))
 
     def _load_fragments(self):
         """Load fragments from the server."""

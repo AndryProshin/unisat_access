@@ -15,14 +15,12 @@ from unisat_api import Parameters, Metadata
 from processing.masks import Mask, get_scl_mask_for_scene, SCL_GOOD_CLASSES
 
 
-def save_mask_with_metadata(mask: Mask, output_path: Path, params_info: dict) -> str:
+def save_mask_with_metadata(mask: Mask, data_path: str, params_info: dict) -> str:
     """Save mask as GeoTIFF and PNG, plus _params.json."""
-    output_dir = output_path.parent
-    output_dir.mkdir(parents=True, exist_ok=True)
+    png_path = mask.save(data_path=data_path, save_png=True)
 
-    png_path = mask.save(str(output_path), save_png=True)
-
-    params_file = output_dir / "_params.json"
+    # _params.json is written next to the .tif under data/
+    params_file = Path(png_path).parent / "_params.json"
     if not params_file.exists():
         params_data = {
             "mask_creation": params_info,
@@ -90,11 +88,10 @@ def main():
         print(f"   Error: {e}")
         return
 
-    output_dir = Path("data/mask_demo")
     mask = Mask.from_array(mask_scl)
 
-    # 3. Save SCL mask
-    print("\n3. Saving SCL mask...")
+    # 3. Save SCL mask (locally)
+    print("\n3. Saving SCL mask locally...")
     scl_params = {
         "operation": "create_scl_mask",
         "good_classes": good_classes,
@@ -103,35 +100,49 @@ def main():
         "scene_dt": scene.dt,
         "scene_satellite": scene.satellite
     }
-    mask_path = output_dir / "mask_scl.tif"
-    png_path = save_mask_with_metadata(mask, mask_path, scl_params)
-    print(f"   GeoTIFF: {mask_path}")
+    scl_data_path = "mask_demo/mask_scl"
+    png_path = save_mask_with_metadata(mask, scl_data_path, scl_params)
+    print(f"   GeoTIFF: data/{scl_data_path}.tif")
     print(f"   PNG: {png_path}")
-    print(f"   JSON: {mask_path.parent / '_params.json'}")
+    print(f"   JSON: data/{scl_data_path.rsplit('/', 1)[0]}/_params.json")
+
+    # 3b. Save SCL mask to S3
+    print("\n3b. Saving SCL mask to S3...")
+    try:
+        s3_tif_key = "mask_demo/mask_scl"
+        s3_png_key = mask.save(
+            s3_path=s3_tif_key,
+            save_png=True,
+        )
+        print(f"   S3 GeoTIFF key: {s3_tif_key}.tif")
+        print(f"   S3 PNG key: {s3_png_key}")
+    except Exception as e:
+        print(f"   S3 save failed: {e}")
 
     # 4. Combine masks
     print("\n4. Combining masks...")
     mask_all_good = Mask.all_good(mask_scl.shape)
     combined = mask_all_good & mask
-    combined_path = output_dir / "mask_combined.tif"
+    combined_data_path = "mask_demo/mask_combined"
     combined_params = {"operation": "combine_masks", "type": "all_good & scl_mask"}
-    save_mask_with_metadata(combined, combined_path, combined_params)
-    print(f"   GeoTIFF: {combined_path}")
-    print(f"   PNG: {combined_path.with_suffix('.png')}")
+    save_mask_with_metadata(combined, combined_data_path, combined_params)
+    print(f"   GeoTIFF: data/{combined_data_path}.tif")
+    print(f"   PNG: data/{combined_data_path}.png")
 
     # 5. Invert mask
     print("\n5. Inverting mask...")
     mask_inv = ~mask
-    inv_path = output_dir / "mask_inv.tif"
+    inv_data_path = "mask_demo/mask_inv"
     inv_params = {"operation": "invert_mask"}
-    save_mask_with_metadata(mask_inv, inv_path, inv_params)
-    print(f"   GeoTIFF: {inv_path}")
-    print(f"   PNG: {inv_path.with_suffix('.png')}")
+    save_mask_with_metadata(mask_inv, inv_data_path, inv_params)
+    print(f"   GeoTIFF: data/{inv_data_path}.tif")
+    print(f"   PNG: data/{inv_data_path}.png")
 
     # 6. Load mask from file and apply
     print("\n6. Loading mask from file and applying...")
-    mask_loaded = Mask.from_file(str(mask_path))
-    print(f"   Loaded mask from {mask_path}, shape {mask_loaded.data.shape}")
+    mask_file = Path("data") / (scl_data_path + ".tif")
+    mask_loaded = Mask.from_file(str(mask_file))
+    print(f"   Loaded mask from {mask_file}, shape {mask_loaded.data.shape}")
 
     test_data = np.ones(mask_scl.shape, dtype=np.float32) * 100
     masked_data = mask_loaded.apply_to_array(test_data)
@@ -143,12 +154,12 @@ def main():
     print("\n" + "=" * 60)
     print("DONE")
     print("=" * 60)
-    print(f"Results in: {output_dir.absolute()}")
-    print("  - mask_scl.tif / .png")
-    print("  - mask_scl_visual.png")
-    print("  - mask_combined.tif / .png")
-    print("  - mask_inv.tif / .png")
-    print("  - _params.json")
+    print("Results:")
+    print("  data/mask_demo/mask_scl.tif / .png")
+    print("  data/mask_demo/mask_scl_visual.png")
+    print("  data/mask_demo/mask_combined.tif / .png")
+    print("  data/mask_demo/mask_inv.tif / .png")
+    print("  data/mask_demo/_params.json")
 
 
 if __name__ == "__main__":

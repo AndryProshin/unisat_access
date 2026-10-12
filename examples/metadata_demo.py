@@ -30,6 +30,13 @@ print(f"device: {scene.device}")
 print(f"station: {scene.station}")
 print(f"products: {list(scene.products.keys())}\n")
 
+# 3.5 Check that products info reached the Scene
+print("=== Products info wiring ===")
+for product in scene.products:
+    res = scene.get_resolution(product)
+    print(f"  {product}: resolution = {res}")
+print()
+
 # 4. Get fragments with paths
 fragments = scene.get_fragments()
 
@@ -58,3 +65,5 @@ print(f"  Directory: {result['download_dir']}")
 print(f"  Files: {len(result['files'])}")
 print(f"  Params: {result['params_file']}")
 print(f"  Log: {result['metadata_file']}")
+
+

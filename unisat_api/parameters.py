@@ -33,6 +33,7 @@ class Parameters:
             params: словарь параметров (переопределяют значения из пресета)
         """
         self._params: Dict[str, Any] = {}
+        self._products_info_cache: Dict[str, Dict[str, Any]] = {}
         
         self._load_schema()
         
@@ -46,6 +47,10 @@ class Parameters:
             self._params.update(params)
         
         self._validate()
+        
+        # Загружаем справочную информацию по продуктам (GetDeviceProductsInfo)
+        # для всех приборов, указанных в параметрах. Кэш живёт на уровне объекта.
+        self._reload_products_info()
 
     def _load_schema(self) -> None:
         if self._schema is not None:
@@ -194,6 +199,7 @@ class Parameters:
     def set(self, key: str, value: Any) -> 'Parameters':
         self._params[key] = value
         self._validate()
+        self._reload_products_info()
         return self
     
     def get_schema(self) -> Dict[str, Any]:
@@ -245,6 +251,7 @@ class Parameters:
     def __setitem__(self, key: str, value: Any) -> None:
         self._params[key] = value
         self._validate()
+        self._reload_products_info()
     
     def __contains__(self, key: str) -> bool:
         return key in self._params
@@ -306,24 +313,21 @@ class Parameters:
         """
         Получить справочную информацию о продуктах и каналах для всех приборов,
         указанных в параметрах (ключ 'devices').
-        
+
+        Данные берутся из кэша, заполненного при создании объекта (и
+        перезагружаемого при каждом изменении параметров).
+
         Returns:
             Словарь вида {device_name: {'bands': ..., 'products': ..., 'vproducts': ...}}
             Всегда возвращает словарь, даже если прибор один.
-        
+
         Example:
             >>> params = Parameters(collection="sentinel2_boa")
             >>> info = params.get_products_info()
             >>> for device, data in info.items():
             ...     print(f"{device}: {len(data['bands'])} bands")
         """
-        devices = self._get_devices_from_params()
-        
-        result = {}
-        for device in devices:
-            result[device] = self._fetch_products_info(device)
-        return result
-    
+        return self._products_info_cache
 
     def print_products_info(self):
         """
@@ -450,6 +454,18 @@ class Parameters:
         if isinstance(devices_param, list):
             return devices_param
         return [devices_param]
+
+    def _reload_products_info(self) -> None:
+        """
+        Reload the products info cache for all devices in params.
+
+        Called from __init__, set() and __setitem__ -- so the cache stays
+        consistent with the current params. May raise NetworkError /
+        MetadataError, same as schema loading.
+        """
+        self._products_info_cache = {}
+        for device in self._get_devices_from_params():
+            self._products_info_cache[device] = self._fetch_products_info(device)
     
     def _fetch_products_info(self, device: str) -> Dict[str, Any]:
         """Выполняет запрос GetDeviceProductsInfo к серверу метаданных."""

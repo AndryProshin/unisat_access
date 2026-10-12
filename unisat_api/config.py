@@ -45,19 +45,3 @@ PRODUCTS_DIR = DATA_DIR / "_product"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)
-
-# S3: either fully configured or not used
-_S3_KEYS = ("S3_BUCKET", "S3_ENDPOINT", "S3_ACCESS_KEY", "S3_SECRET_KEY")
-_s3_present = [k for k in _S3_KEYS if os.getenv(k)]
-
-if _s3_present and len(_s3_present) != len(_S3_KEYS):
-    missing = [k for k in _S3_KEYS if not os.getenv(k)]
-    raise ValueError(f"S3 is partially configured, missing: {', '.join(missing)}")
-
-S3_ENABLED = len(_s3_present) == len(_S3_KEYS)
-S3_BUCKET = os.getenv("S3_BUCKET")
-S3_ENDPOINT = os.getenv("S3_ENDPOINT")
-S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
-S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
-S3_PREFIX = os.getenv("S3_PREFIX", "")
-S3_ADDRESSING_STYLE = os.getenv("S3_ADDRESSING_STYLE", "path")

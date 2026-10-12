@@ -141,7 +141,7 @@ class IndexCalculator:
         index: SpectralIndex,
         mask_used: bool,
         bbox: Optional[List[float]],
-        resample_to: Optional[str],
+        resample_to: Optional[float],
         resample_method: str
     ) -> None:
         """Save _params.json with query and operation parameters."""
@@ -189,7 +189,7 @@ class IndexCalculator:
         data_subdir: str,
         mask: Optional[np.ndarray] = None,
         bbox: Optional[List[float]] = None,
-        resample_to: Optional[str] = "highest",
+        resample_to: Optional[float] = None,
         resample_method: str = "bilinear",
         save_png: bool = False,
         keep_tmp: bool = False
@@ -207,8 +207,8 @@ class IndexCalculator:
             Mask (1 = good pixel, 0 = exclude)
         bbox : List[float], optional
             BBOX in WGS84 [minx, miny, maxx, maxy]
-        resample_to : str, optional
-            "highest", "lowest" or None
+        resample_to : float, optional
+            Target resolution in meters, or None to keep native
         resample_method : str
             "nearest", "bilinear", "cubic"
         save_png : bool, default=False
@@ -297,7 +297,7 @@ class IndexCalculator:
         self,
         bands: Dict[str, str],
         bbox: Optional[List[float]],
-        resample_to: Optional[str],
+        resample_to: Optional[float],
         resample_method: str,
         data_subdir: str,
         keep_tmp: bool = False
@@ -359,7 +359,7 @@ def compute_index(
     bbox: Optional[List[float]] = None,
     offset: float = -1000,
     scale: float = 10000,
-    resample_to: Optional[str] = "highest",
+    resample_to: Optional[float] = None,
     resample_method: str = "bilinear",
     save_png: bool = False,
     keep_tmp: bool = False
@@ -383,8 +383,8 @@ def compute_index(
         Offset for DN->Reflectance (default -1000)
     scale : float
         Scale for DN->Reflectance (default 10000)
-    resample_to : str, optional
-        "highest", "lowest" or None
+    resample_to : float, optional
+        Target resolution in meters, or None to keep native
     resample_method : str
         "nearest", "bilinear", "cubic"
     save_png : bool, default=False
