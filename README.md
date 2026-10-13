@@ -257,7 +257,9 @@ scene.get_all_products(products_subdir="products_demo", max_size=1024)
 
 Требует установки GDAL. Позволяет склеивать фрагменты сцены в один файл, обрезать по bbox и пересэмплировать.
 
-Результат сохраняется в `data/<data_subdir>/`. Служебные файлы (`_params.json`, `_metadata.txt`) пишутся рядом.
+Результат сохраняется локально в `data/<data_subdir>/` либо выгружается в S3 в префикс `<s3_subdir>` (параметры взаимоисключающие, один из них обязателен). Служебные файлы (`_params.json`, `_metadata.txt`) пишутся рядом с результатом.
+
+При использовании `s3_subdir` файлы сначала записываются локально в `data/s3/<s3_subdir>/`, затем выгружаются в S3 через `s3tool` и удаляются локально. Если выгрузка не удалась — локальные файлы остаются для разбора.
 
 ```python
 from processing import GDALScene
@@ -279,15 +281,23 @@ metadata = Metadata(params)
 for scene in metadata:
     gdal_scene = GDALScene(scene)
 
-    # Склеиваем фрагменты, обрезаем по bbox, сохраняем
+    # Склеиваем фрагменты, обрезаем по bbox, сохраняем локально
     result = gdal_scene.save_products(
         data_subdir="ryazan_processed",
-        resample_to="highest",      # пересэмплировать к максимальному разрешению
+        resample_to="highest",      # все продукты к лучшему (мельчайшему) разрешению
         resample_method="bilinear", # метод пересэмплинга
         qlook=True
     )
 
     print(f"Сохранено: {result['files']}")
+
+    # Или сразу в S3 (вместо data_subdir указываем s3_subdir)
+    result = gdal_scene.save_products(
+        s3_subdir="ryazan_processed",
+        resample_to="highest",
+        resample_method="bilinear",
+    )
+    print(f"Загружено в S3: {result['files']}")
 
 # Результат в data/ryazan_processed/
 #   _params.json      - параметры запроса и обработки
@@ -300,7 +310,8 @@ for scene in metadata:
 
 | Параметр        | Тип                         | Описание                                                                          |
 |-----------------|-----------------------------|-----------------------------------------------------------------------------------|
-| data_subdir     | str                         | Имя поддиректории внутри data/ (обязательный)                                     |
+| data_subdir     | Optional[str]               | Поддиректория внутри data/ (взаимоисключающая с s3_subdir)                        |
+| s3_subdir       | Optional[str]               | Префикс в S3 (взаимоисключающий с data_subdir)                                    |
 | products        | Optional[List[str]]         | Список продуктов для обработки (None → все продукты сцены)                        |
 | bbox            | Optional[List[float]]       | [minx, miny, maxx, maxy] в WGS84 градусах (None → из параметров сцены)            |
 | resample_to     | Optional[Union[str, float]] | None — не менять; `highest` — меньше метров (лучше); `lowest` — больше метров (хуже); число — метры |
@@ -379,6 +390,37 @@ mask = get_scl_mask_for_scene(
 result = compute_ndvi(scene, "ndvi_clean", mask=mask)
 ```
 
+## Работа с S3
+
+Для операций, которые не поддерживают `s3_subdir`/`s3_path` напрямую, а также для произвольного копирования результатов, можно использовать `S3Tool` напрямую:
+
+```python
+from s3tool import S3Tool
+
+# Настройки берутся из .env рядом с s3tool.py:
+# S3TOOL_BUCKET, S3TOOL_BASE, AWS_ENDPOINT_URL, AWS_ACCESS_KEY_ID,
+# AWS_SECRET_ACCESS_KEY, AWS_S3_ADDRESSING_STYLE
+tool = S3Tool(raise_on_fatal=True)
+
+# Загрузить один файл: имя сохраняется, попадает в указанный родитель
+tool.upload_file("data/masks/scl_clean.tif", "masks")
+
+# Загрузить набор файлов в один префикс
+tool.upload_files(
+    ["data/masks/scl_clean.tif", "data/masks/scl_clean.png"],
+    "masks",
+)
+
+# Загрузить каталог как объект: <basename>/... в приёмнике
+tool.upload_dir("data/ndvi_20240828", "results")
+
+# Проверить наличие
+tool.file_exists("masks/scl_clean.tif")
+
+# Список файлов в префиксе
+tool.list_files("masks", recursive=True)
+```
+
 ## Примечания
 
 * BBOX указывается в градусах WGS84 (долгота, широта).
@@ -386,7 +428,7 @@ result = compute_ndvi(scene, "ndvi_clean", mask=mask)
 * Скачанные данные и продукты сохраняются в предопределённые директории:
   * `data/_download/` — скачанные фрагменты;
   * `data/_product/` — растровые продукты.
-* Результаты обработки (склейки, индексы, маски) сохраняются в `data/<data_subdir>/`, где `data_subdir` задаёт пользователь.
+* Результаты обработки (склейки, индексы, маски) сохраняются в `data/<data_subdir>/` либо в S3 (`s3_subdir` / `s3_path`), где подкаталог задаёт пользователь. При выгрузке в S3 файлы сначала пишутся локально, затем переносятся и удаляются.
 * Служебные файлы сохраняются рядом с результатом:
   * `_params.json` — полные параметры запроса и обработки;
   * `_metadata.txt` — CSV-подобный лог для всех сцен.
