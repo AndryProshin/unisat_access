@@ -5,13 +5,14 @@ Demonstrate resample_to modes in GDALScene.save_products.
 Uses a scene that has products with different native resolutions
 (channel8_l2a -- 10 m, channel11_l2a -- 20 m).
 
-Calls save_products three times into different subdirectories:
+Calls save_products:
   * resample_to=None       -- keep native (each product at its own resolution)
   * resample_to="highest"  -- both products at 10 m
   * resample_to="lowest"   -- both products at 20 m
+  * s3_subdir="resample_demo" -- results go to S3 instead of local data/
 
-After each call, reads back the resulting GeoTIFFs and prints their
-pixel size, so you can verify that resampling actually happened.
+After each local call, reads back the resulting GeoTIFFs and prints
+their pixel size. For the S3 branch, just prints returned keys.
 """
 
 import sys
@@ -93,3 +94,32 @@ gdal_scene.save_products(
     resample_method="average",
 )
 show_resolution(Path("data/resample_demo/lowest"))
+print()
+
+# 6. s3_subdir -- results go to S3
+print("=== s3_subdir='resample_demo' (results in S3) ===")
+result = gdal_scene.save_products(
+    s3_subdir="resample_demo",
+    products=["channel8_l2a", "channel11_l2a"],
+    resample_to="highest",
+    resample_method="bilinear",
+    qlook=True,
+)
+print("Returned result:")
+print(f"  s3:         {result.get('s3')}")
+print(f"  output_dir: {result['output_dir']}")
+for product, key in result["files"].items():
+    print(f"  {product}: {key}")
+for product, key in result.get("qlook_files", {}).items():
+    print(f"  {product} (qlook): {key}")
+
+# Check that local data/s3/resample_demo/ is empty
+local_dir = Path("data/s3/resample_demo")
+if local_dir.exists():
+    leftovers = list(local_dir.iterdir())
+    if leftovers:
+        print(f"\nWARNING: local {local_dir} still has: {[p.name for p in leftovers]}")
+    else:
+        print(f"\nLocal {local_dir} is empty (files uploaded and removed).")
+else:
+    print(f"\nLocal {local_dir} does not exist.")

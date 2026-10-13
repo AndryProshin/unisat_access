@@ -6,8 +6,9 @@ S3 bucket, with all relative paths resolved against the base directory
 specified when the object is created.
 
 Configuration:
-  By default .env is read from the directory containing this file.
-  Recognized variables:
+  By default .env is read from the directory containing this file
+  (at S3Tool construction time, only if an explicit s3_client is not
+  passed). Recognized variables:
     S3TOOL_BUCKET           -- bucket name (used when bucket is not passed)
     S3TOOL_BASE             -- base directory inside the bucket (default "")
     AWS_ENDPOINT_URL        -- custom endpoint (Ceph RGW, MinIO, etc.)
@@ -43,7 +44,7 @@ import shutil
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import boto3
 from botocore.config import Config
@@ -55,11 +56,6 @@ from botocore.exceptions import (
     NoRegionError,
 )
 from dotenv import load_dotenv
-
-
-# Load .env from the directory containing this file (if it exists).
-# Explicit s3_client in the constructor bypasses this configuration.
-load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
 READY_EXT = ".rdy"
@@ -129,6 +125,16 @@ class S3Tool:
         :param s3_client:       optional preconfigured boto3 client. If
                                 given, .env is not used to build the client.
         """
+        if s3_client is not None:
+            self.client = s3_client
+        else:
+            load_dotenv(Path(__file__).resolve().parent / ".env")
+            try:
+                self.client = self._build_client_from_env()
+            except (NoCredentialsError, NoRegionError, BotoCoreError) as e:
+                self._fatal("ACCESS_DENIED", f"cannot create S3 client: {e}", raise_on_fatal)
+                return
+
         if bucket is None:
             bucket = os.getenv("S3TOOL_BUCKET")
         if base is None:
@@ -147,15 +153,6 @@ class S3Tool:
         self._error_code: Optional[str] = None
         self._error_message: Optional[str] = None
         self._warning: Optional[str] = None
-
-        if s3_client is not None:
-            self.client = s3_client
-        else:
-            try:
-                self.client = self._build_client_from_env()
-            except (NoCredentialsError, NoRegionError, BotoCoreError) as e:
-                self._fatal("ACCESS_DENIED", f"cannot create S3 client: {e}", raise_on_fatal)
-                return
 
         try:
             self.client.head_bucket(Bucket=self.bucket)
@@ -295,7 +292,7 @@ class S3Tool:
     def _existing_keys_under(self, prefix: str) -> Optional[set]:
         """
         All keys under prefix (recursive), in a single paginated pass.
-        Used for pre-checking conflicts in upload_dir.
+        Used for pre-checking conflicts in upload_dir / upload_files.
         On error -- None.
         """
         result: set = set()
@@ -451,6 +448,65 @@ class S3Tool:
         except (EndpointConnectionError, BotoCoreError) as e:
             self._set_error("NETWORK", str(e))
             return False
+        return True
+
+    def upload_files(self, local_files: List[str], s3_base_dir: str = "") -> bool:
+        """
+        Upload a list of local files to base/s3_base_dir/.
+
+        Each file keeps its basename; source parent directories are
+        ignored. Duplicate basenames within the list are an error.
+
+        Conflicts are checked in one pass: if any target key already
+        exists, nothing is uploaded and ALREADY_EXISTS is returned.
+        Missing local file -- NOT_FOUND, nothing is uploaded.
+        Empty list -- True (no-op).
+        """
+        self._clear_state()
+
+        if not local_files:
+            return True
+
+        planned = []
+        seen_names = set()
+        for path in local_files:
+            if not os.path.isfile(path):
+                self._set_error("NOT_FOUND", f"local file not found: {path}")
+                return False
+            name = os.path.basename(path)
+            if name in seen_names:
+                self._set_error(
+                    "INVALID_PATH",
+                    f"duplicate basename in upload list: {name}",
+                )
+                return False
+            seen_names.add(name)
+            rel = self._join_prefix(s3_base_dir, name)
+            key = self._abs(rel)
+            planned.append((path, key))
+
+        existing = self._existing_keys_under(self._dir_key(s3_base_dir))
+        if existing is None:
+            return False
+
+        conflicts = [key for _path, key in planned if key in existing]
+        if conflicts:
+            self._set_error(
+                "ALREADY_EXISTS",
+                "s3 objects already exist: " + ", ".join(conflicts),
+            )
+            return False
+
+        for path, key in planned:
+            try:
+                self.client.upload_file(path, self.bucket, key)
+            except ClientError as e:
+                code, msg = _map_client_error(e)
+                self._set_error(code, f"failed on {key}: {msg}")
+                return False
+            except (EndpointConnectionError, BotoCoreError) as e:
+                self._set_error("NETWORK", f"failed on {key}: {e}")
+                return False
         return True
 
     # ------------------------------------------------------------------
@@ -1012,16 +1068,13 @@ class S3Tool:
         """
         p = self._dir_key(prefix)
 
-        files, _ = self._list_objects(p, recursive=False)
+        files, dirs = self._list_objects(p, recursive=False)
         if files is None:
             return None, None
 
         names_rel = [self._name_of(f) for f in files]
         markers = {n[:-len(READY_EXT)] for n in names_rel if n.endswith(READY_EXT)}
 
-        _, dirs = self._list_objects(p, recursive=False)
-        if dirs is None:
-            return None, None
         dir_names = {d.rstrip("/").rsplit("/", 1)[-1] for d in dirs}
 
         pairs = sorted(markers & dir_names)

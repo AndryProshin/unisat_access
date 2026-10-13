@@ -18,6 +18,7 @@ from osgeo import gdal, osr, ogr
 
 from unisat_api.scene import Scene
 from unisat_api import config
+from unisat_api.exceptions import StorageError
 
 from .utils import read_raster, write_geotiff, get_raster_statistics, array_to_png
 
@@ -36,7 +37,8 @@ class GDALScene:
 
     def save_products(
         self,
-        data_subdir: str,
+        data_subdir: Optional[str] = None,
+        s3_subdir: Optional[str] = None,
         products: Optional[List[str]] = None,
         bbox: Optional[List[float]] = None,
         resample_to: Optional[Union[str, float]] = None,
@@ -46,8 +48,13 @@ class GDALScene:
         """
         Merge fragments per product, clip by bbox and save as GeoTIFF.
 
+        Exactly one of data_subdir / s3_subdir must be provided.
+
         Args:
-            data_subdir: subdirectory inside data/
+            data_subdir: subdirectory inside data/ (local destination)
+            s3_subdir:   prefix in S3 (upload destination). Results are
+                         written locally to data/s3/<s3_subdir>/ first,
+                         then uploaded and removed.
             products: list of products (None -> all scene products)
             bbox: [minx, miny, maxx, maxy] in WGS84 (None -> from scene params)
             resample_to: one of:
@@ -59,9 +66,18 @@ class GDALScene:
             qlook: if True, create a quicklook PNG next to GeoTIFF
 
         Returns:
-            dict with output_dir, files and qlook_files
+            dict with output_dir, files and qlook_files. When s3_subdir is
+            used, paths in the result are S3 keys and the flag "s3" is True.
         """
-        output_path = config.DATA_DIR / data_subdir
+        if (data_subdir is None) == (s3_subdir is None):
+            raise ValueError(
+                "save_products: exactly one of data_subdir or s3_subdir must be provided"
+            )
+
+        if data_subdir is not None:
+            output_path = config.DATA_DIR / data_subdir
+        else:
+            output_path = config.DATA_DIR / "s3" / s3_subdir
         output_path.mkdir(parents=True, exist_ok=True)
 
         if products is None:
@@ -107,13 +123,77 @@ class GDALScene:
 
         self._save_final_metadata(output_path, saved_files)
 
-        print(f"\nSaved to: {output_path}")
+        qlook_files = {}
+        if qlook:
+            for prod in saved_files:
+                qlook_path = output_path / f"{dt_str}_{prod}_qlook.png"
+                if qlook_path.exists():
+                    qlook_files[prod] = str(qlook_path)
+
+        if data_subdir is not None:
+            print(f"\nSaved to: {output_path}")
+            return {
+                "output_dir": str(output_path),
+                "files": saved_files,
+                "qlook_files": qlook_files,
+            }
+
+        # S3 branch: upload everything we produced, then remove local copies.
+        local_files = list(saved_files.values())
+        local_files.append(str(output_path / "_params.json"))
+        local_files.append(str(output_path / "_metadata.txt"))
+        local_files.extend(qlook_files.values())
+
+        s3_keys = self._upload_to_s3(local_files, s3_subdir)
+        self._remove_local_files(local_files)
+
+        print(f"\nSaved to S3: {s3_subdir}/")
 
         return {
-            "output_dir": str(output_path),
-            "files": saved_files,
-            "qlook_files": {prod: str(output_path / f"{dt_str}_{prod}_qlook.png") for prod in saved_files} if qlook else {}
+            "output_dir": s3_subdir,
+            "files": {prod: s3_keys[str(path)] for prod, path in saved_files.items()},
+            "qlook_files": {prod: s3_keys[path] for prod, path in qlook_files.items()},
+            "s3": True,
         }
+
+    def _upload_to_s3(
+        self,
+        local_files: List[str],
+        s3_subdir: str,
+    ) -> Dict[str, str]:
+        """
+        Upload the given files to S3, return {local_path: s3_key}.
+        Raises StorageError on failure.
+        """
+        from s3tool import S3Tool, S3ToolError
+
+        try:
+            tool = S3Tool(raise_on_fatal=True)
+        except S3ToolError as e:
+            raise StorageError(f"save_products: cannot connect to S3: {e}") from None
+
+        if not tool.upload_files(local_files, s3_subdir):
+            raise StorageError(
+                f"save_products: failed to upload to S3 "
+                f"[{tool.get_error_code()}] {tool.get_error_message()}"
+            )
+
+        prefix = s3_subdir.rstrip("/")
+        keys = {}
+        for path in local_files:
+            name = os.path.basename(path)
+            keys[path] = f"{prefix}/{name}" if prefix else name
+        return keys
+
+    @staticmethod
+    def _remove_local_files(local_files: List[str]) -> None:
+        """Remove only the files we produced, ignore missing."""
+        for path in local_files:
+            try:
+                if os.path.isfile(path):
+                    os.remove(path)
+            except OSError:
+                pass
 
     def _resolve_resample_to(
         self,
